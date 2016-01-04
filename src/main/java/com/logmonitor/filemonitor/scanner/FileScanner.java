@@ -1,6 +1,5 @@
 package com.logmonitor.filemonitor.scanner;
 
-import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.monitor.FileAlterationListener;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
@@ -22,7 +21,7 @@ public class FileScanner {
 	private void reigsterListener() {
 		if (confItem.isUseLogNameFilter()) {
 			this.observer = new FileAlterationObserver(confItem.getLogPath(), 
-					FileFilterUtils.suffixFileFilter(confItem.getLogNameFilter()));
+					new LogFileFilter(confItem.getLogNameFilter()));
 		} else {
 			this.observer = new FileAlterationObserver(confItem.getLogPath());
 		}
@@ -30,27 +29,23 @@ public class FileScanner {
 		this.monitor = new FileAlterationMonitor(confItem.getScanInterval(), this.observer);
 	}
 	
-	public void startScan() {
-		try {
-			this.monitor.start();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	public void startScan() throws Exception {
+		this.monitor.start();
 	}
 	
-	public void stopScan() {
-		try {
-			Iterable<FileAlterationObserver> observers = this.monitor.getObservers();
-			for (FileAlterationObserver _observer : observers) {
-				Iterable<FileAlterationListener> listeners = _observer.getListeners();
-				for (FileAlterationListener listener : listeners) {
-					FileListener fileListener = (FileListener)listener;
-					fileListener.executeStop(_observer);
-				}
+	public void stopScan() throws Exception {
+		Iterable<FileAlterationObserver> observers = this.monitor.getObservers();
+		for (FileAlterationObserver _observer : observers) {
+			Iterable<FileAlterationListener> listeners = _observer.getListeners();
+			for (FileAlterationListener listener : listeners) {
+				FileListener fileListener = (FileListener)listener;
+				fileListener.executeStop(_observer);
 			}
-			this.monitor.stop();
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
+		this.monitor.stop();
+	}
+	
+	public Conf.ConfItem getConfItem() {
+		return this.confItem;
 	}
 }

@@ -1,11 +1,14 @@
 package com.logmonitor.filemonitor.scanner;
 
+import java.io.Externalizable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -13,10 +16,12 @@ import java.util.Map;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 
-import com.logmonitor.filemonitor.buffer.ThreadSafeBuffer;
+import com.logmonitor.filemonitor.buffer.Buffer;
+import com.logmonitor.filemonitor.config.Conf;
 
-public class FileListener extends FileAlterationListenerAdaptor {
-	private ThreadSafeBuffer buffer = null;
+public class FileListener extends FileAlterationListenerAdaptor implements Externalizable {
+	private static final long serialVersionUID = 6316167668511901932L;
+	private Buffer buffer = null;
 	private Map<File,FileNode> fileScanMap = null;
 	private boolean running = false;
 	private enum STATE {
@@ -32,28 +37,43 @@ public class FileListener extends FileAlterationListenerAdaptor {
 		}
 	};
 	
-	public FileListener(ThreadSafeBuffer buffer) {
+	public FileListener(Buffer buffer) {
 		this.buffer = buffer;
 		this.fileScanMap = new HashMap<File,FileNode>();
+	}
+	
+	public FileListener() {
+		
+	}
+	
+	public void setBuffer(Buffer buffer) {
+		this.buffer = buffer;
+	}
+	
+	public Buffer getBuffer() {
+		return this.buffer;
 	}
 	
 	@Override
 	public void onFileCreate(File file) {
 		super.onFileCreate(file);
-		this.fileScanMap.put(file, new FileNode());
+		FileNode fileNode = new FileNode();
+		fileNode.file = file;
+		this.fileScanMap.put(file, fileNode);
 		this.processFileContent(file, STATE.CREATE);
 	}
 	
 	@Override
 	public void onFileChange(File file) {
 		super.onFileChange(file);
-		
 		this.processFileContent(file, STATE.CHANGE);
 	}
 	
 	@Override
 	public void onFileDelete(File file) {
 		super.onFileDelete(file);
+		//DEBUG
+		//System.out.println(STATE.DELETE + ": " + file.getPath());
 		FileNode fileNode = this.fileScanMap.remove(file);
 		try {
 			fileNode.reader.close();
@@ -64,18 +84,15 @@ public class FileListener extends FileAlterationListenerAdaptor {
 	}
 	
 	private void processFileContent(File file, STATE state) {
+		if (buffer == null) {
+			return;
+		}
 		FileNode fileNode = this.fileScanMap.get(file);
 		if (fileNode == null) {
 			return;
 		}
-//		if (state == STATE.CHANGE) {
-//			try {
-//				fileNode.reader.close();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//			fileNode.reader = null;
-//		}
+		//DEBUG
+		//System.out.println(state + ": " + file.getPath());
 		if (fileNode.reader == null) {
 			try {
 				fileNode.reader = new LineNumberReader(new FileReader(file));
@@ -85,19 +102,18 @@ public class FileListener extends FileAlterationListenerAdaptor {
 		}
 		try {
 			//recover file state
-			if (fileNode.reader.getLineNumber() == 0 && fileNode.curIndex != 0) {
-				for (int i = 0 ; i < fileNode.curIndex ; i++) {
-					fileNode.reader.readLine();
-				}
+			if (fileNode.reader.getLineNumber() == 0 && fileNode.nextIndex != 0) {
+				fileNode.reader.skip(fileNode.curByte);
 			}
 			String newLine = null;
 			do {
-				fileNode.reader.setLineNumber(fileNode.curIndex);
+				fileNode.reader.setLineNumber(fileNode.nextIndex);
 				newLine = fileNode.reader.readLine();
-				//DEBUG
-				//System.out.println(fileNode.reader.getLineNumber()+" , "+newLine);
 				if (newLine != null) {
-					fileNode.curIndex++;
+					//DEBUG
+					//System.out.println("File:" + file + " , " + "Line: " + (fileNode.reader.getLineNumber() - 1) + " , Byte: " + fileNode.curByte + " , "+newLine);
+					fileNode.nextIndex++;
+					fileNode.curByte += newLine.length() + Conf.getDelimiter().len();
 					buffer.insert(newLine);
 				}
 			} while(newLine != null);
@@ -108,23 +124,29 @@ public class FileListener extends FileAlterationListenerAdaptor {
 	
 	private void initialScanningForAllFiles(File directory, FileFilter fileFilter) {
 		File allFiles[] = directory.listFiles();
+		if (allFiles == null) {
+			return;
+		}
 		for (int i = 0; i < allFiles.length ; i++ ) {
 			if (allFiles[i].isDirectory()) {
-				this.initialScanningForAllFiles(allFiles[i], fileFilter);
+				//commons-io 不监控子文件夹
+				//this.initialScanningForAllFiles(allFiles[i], fileFilter);
 			} else if(allFiles[i].isFile() && !this.fileScanMap.containsKey(allFiles[i])) {
 				if (fileFilter == null || ( fileFilter != null && fileFilter.accept(allFiles[i]))) {
-					this.fileScanMap.put(allFiles[i], new FileNode());
+					FileNode fileNode = new FileNode();
+					fileNode.file = allFiles[i];
+					this.fileScanMap.put(allFiles[i], fileNode);
 				} else {
 					continue;
 				}
-				//DEBUG
-				//System.out.println(allFiles[i].getPath());
 			}
 		}
 		
 		Iterator<File> fileIterator = this.fileScanMap.keySet().iterator();
 		while (fileIterator.hasNext()) {
 			File file = fileIterator.next();
+			//DEBUG
+			//System.out.println("INIT-PROCESS(" + Thread.currentThread().getName() + "): " + file.getPath());
 			this.processFileContent(file, STATE.INIT);
 		}
 	}
@@ -155,5 +177,35 @@ public class FileListener extends FileAlterationListenerAdaptor {
 	@Override  
     public void onStop(FileAlterationObserver observer) {
 		super.onStop(observer);
+	}
+
+	public void writeExternal(ObjectOutput out) throws IOException {
+		out.writeObject(fileScanMap);
+		//DEBUG
+//		Set<File> keySet = this.fileScanMap.keySet();
+//		Iterator<File> keyIterator = keySet.iterator();
+//		while (keyIterator.hasNext()) {
+//			File file = keyIterator.next();
+//			FileNode fileNode = this.fileScanMap.get(file);
+//			System.out.println("MAP {");
+//			System.out.println(file + " ; " + fileNode);
+//			System.out.println("}");
+//		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public void readExternal(ObjectInput in) throws IOException,
+			ClassNotFoundException {
+		this.fileScanMap = (Map<File, FileNode>) in.readObject();
+		//DEBUG
+//		Set<File> keySet = this.fileScanMap.keySet();
+//		Iterator<File> keyIterator = keySet.iterator();
+//		while (keyIterator.hasNext()) {
+//			File file = keyIterator.next();
+//			FileNode fileNode = this.fileScanMap.get(file);
+//			System.out.println("MAP {");
+//			System.out.println(file + " ; " + fileNode);
+//			System.out.println("}");
+//		}
 	}
 }

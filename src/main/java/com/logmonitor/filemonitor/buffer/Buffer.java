@@ -5,4 +5,8 @@ public interface Buffer {
 	public String getAll();
 	public void clearAll();
 	public boolean isFull();
+	public boolean isEmpty();
+	public int size();
+	public void setEventHandler(BufferEventHandler handler);
+	public void notifyEvent(BufferEvent event);
 }

@@ -43,6 +43,12 @@ public class ThreadSafeBuffer implements Buffer {
 		this.bufferEventHandler = null;
 	}
 	
+	public void notifyEvent(BufferEvent event) {
+		if (this.bufferEventHandler != null && event.externalNotify()) {
+			this.bufferEventHandler.process(this, event);
+		}
+	}
+	
 	public void setNotifyOnFull(boolean notifyOnFull) {
 		this.notifyOnFull = notifyOnFull;
 	}
