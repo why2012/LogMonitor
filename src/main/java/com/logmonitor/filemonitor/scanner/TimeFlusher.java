@@ -15,7 +15,10 @@ public class TimeFlusher implements Runnable {
 		this.buffer = buffer;
 		this.interval = interval;
 	}
-
+	
+	/**
+	 * 定时通知Handler刷新缓存
+	 */
 	public void run() {
 		try {
 			while(running) {
@@ -46,4 +49,5 @@ public class TimeFlusher implements Runnable {
 		running = false;
 		return true;
 	}
+	
 }

@@ -9,6 +9,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Conf {
 	private List<ConfItem> itemList;
+	private ConfHandler confHandler = new ConfHandler();
 	private int flushInterval = 2;//seconds
 	private static DELIMITER delimiter = DELIMITER.N;//\n \r\n
 	private int mainBufferSize = 10;//lines
@@ -21,6 +22,38 @@ public class Conf {
 		DELIMITER(byte len) {this.len = len;}
 		public byte len() {return len;};
 	};
+	
+	public static class ConfHandler {
+		private boolean useStdoutHandler = false;
+		private boolean useNetHandler = false;
+		private String netIp = "127.0.0.1";
+		private String netPort = "3333";
+		
+		public boolean isUseStdoutHandler() {
+			return useStdoutHandler;
+		}
+		public void setUseStdoutHandler(boolean useStdoutHandler) {
+			this.useStdoutHandler = useStdoutHandler;
+		}
+		public boolean isUseNetHandler() {
+			return useNetHandler;
+		}
+		public void setUseNetHandler(boolean useNetHandler) {
+			this.useNetHandler = useNetHandler;
+		}
+		public String getNetIp() {
+			return netIp;
+		}
+		public void setNetIp(String netIp) {
+			this.netIp = netIp;
+		}
+		public String getNetPort() {
+			return netPort;
+		}
+		public void setNetPort(String netPort) {
+			this.netPort = netPort;
+		}
+	}
 	
 	public static class ConfItem {
 		private String logPath = "";
@@ -155,6 +188,14 @@ public class Conf {
 
 	public void setEnableRecover(boolean enableRecover) {
 		this.enableRecover = enableRecover;
+	}
+
+	public ConfHandler getConfHandler() {
+		return confHandler;
+	}
+
+	public void setConfHandler(ConfHandler confHandler) {
+		this.confHandler = confHandler;
 	}
 
 }

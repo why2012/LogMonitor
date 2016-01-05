@@ -13,6 +13,7 @@ import com.logmonitor.filemonitor.buffer.BufferEvent;
 import com.logmonitor.filemonitor.buffer.BufferEventHandler;
 import com.logmonitor.filemonitor.buffer.ThreadSafeBuffer;
 import com.logmonitor.filemonitor.config.Conf;
+import com.logmonitor.filemonitor.handlers.HandlerGroup;
 import com.logmonitor.filemonitor.scanner.FileListener;
 import com.logmonitor.filemonitor.scanner.FileScanner;
 import com.logmonitor.filemonitor.scanner.TimeFlusher;
@@ -24,12 +25,15 @@ public class FileMonitor {
 	private TimeFlusher timeFlusher = null;
 	private FileListener[] fileListeners = null;
 	private FileScanner[] fileScanners = null;
+	private HandlerGroup handlerGroup = null;
 	
 	public FileMonitor(Conf conf) throws Exception{
 		this.conf = conf;
 		this.buffer = new ThreadSafeBuffer(conf.getMainBufferSize());
 		this.bufferEventHandler = new BufferHandlerImplBufferEventHandler();
 		buffer.setEventHandler(bufferEventHandler);
+		this.handlerGroup = new HandlerGroup(conf,buffer);
+		((BufferHandlerImplBufferEventHandler)this.bufferEventHandler).setHandlerGroup(handlerGroup);
 		this.timeFlusher = new TimeFlusher(buffer, conf.getFlushInterval());
 		final int size = conf.getItems().size();
 		fileListeners = new FileListener[size];
@@ -59,6 +63,7 @@ public class FileMonitor {
 		for (int i = 0 ; i < size ; i++) {
 			fileScanners[i].startScan();
 		}
+		this.handlerGroup.startHandlers();
 	}
 	
 	public void stop() throws Exception {
@@ -67,6 +72,7 @@ public class FileMonitor {
 		for (int i = 0 ; i < size ; i++) {
 			fileScanners[i].stopScan();
 		}
+		this.handlerGroup.stopHandlers();
 	}
 	
 	private FileListener getFileListenerFromData(String seriaFileName) throws Exception {
@@ -108,16 +114,38 @@ public class FileMonitor {
 	public void saveStateData() throws Exception {
 		this.saveFileListener();
 	}
+
 }
 
 class BufferHandlerImplBufferEventHandler implements BufferEventHandler {
-
+	private HandlerGroup handlerGroup = null;
+	
+	public BufferHandlerImplBufferEventHandler(HandlerGroup handlerGroup) {
+		this.handlerGroup = handlerGroup;
+	}
+	
+	public BufferHandlerImplBufferEventHandler() {
+		
+	}
+	
+	public HandlerGroup getHandlerGroup() {
+		return this.handlerGroup;
+	}
+	
+	public void setHandlerGroup(HandlerGroup handlerGroup) {
+		this.handlerGroup = handlerGroup;
+	}
+	
+	/**
+	 * 出现FULL事件通知Handler刷新缓存
+	 */
 	public void process(Buffer buffer, BufferEvent event) {
+		//DEBUG
 		SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss"); 
 		String currentTime = dateFormat.format(new Date());
 		System.out.println("(" + currentTime + ")BufferEvent: " + event + ", Size: " + buffer.size());
-		String logs = buffer.getAll();
-		System.out.print(logs);
+		
+		this.handlerGroup.processData();
 	}
 	
 }

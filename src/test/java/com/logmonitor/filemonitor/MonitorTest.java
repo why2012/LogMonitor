@@ -15,6 +15,7 @@ public class MonitorTest {
 		Conf.ConfItem confItem02 = new Conf.ConfItem("/Users/wanghaiyang/Desktop/logs/info");
 		conf.addConfItem(confItem01);
 		conf.addConfItem(confItem02);
+		conf.getConfHandler().setUseStdoutHandler(true);
 		final FileMonitor fileMonitor = new FileMonitor(conf);
 		fileMonitor.start();
 		//Save data.
