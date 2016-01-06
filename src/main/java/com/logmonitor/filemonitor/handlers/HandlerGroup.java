@@ -22,7 +22,7 @@ public class HandlerGroup {
 		}
 		
 		if (confHandler.isUseNetHandler()) {
-			Handler handler = new NetHandler();
+			Handler handler = new NetHandler(confHandler.getNetIp(), confHandler.getNetPort());
 			this.handlers.add(handler);
 		}
 	}

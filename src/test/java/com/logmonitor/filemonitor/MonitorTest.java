@@ -16,6 +16,9 @@ public class MonitorTest {
 		conf.addConfItem(confItem01);
 		conf.addConfItem(confItem02);
 		conf.getConfHandler().setUseStdoutHandler(true);
+		conf.getConfHandler().setUseNetHandler(true);
+		conf.getConfHandler().setNetIp("127.0.0.1");
+		conf.getConfHandler().setNetPort(5656);
 		final FileMonitor fileMonitor = new FileMonitor(conf);
 		fileMonitor.start();
 		//Save data.

@@ -27,7 +27,7 @@ public class Conf {
 		private boolean useStdoutHandler = false;
 		private boolean useNetHandler = false;
 		private String netIp = "127.0.0.1";
-		private String netPort = "3333";
+		private int netPort = 3333;
 		
 		public boolean isUseStdoutHandler() {
 			return useStdoutHandler;
@@ -47,10 +47,10 @@ public class Conf {
 		public void setNetIp(String netIp) {
 			this.netIp = netIp;
 		}
-		public String getNetPort() {
+		public int getNetPort() {
 			return netPort;
 		}
-		public void setNetPort(String netPort) {
+		public void setNetPort(int netPort) {
 			this.netPort = netPort;
 		}
 	}
