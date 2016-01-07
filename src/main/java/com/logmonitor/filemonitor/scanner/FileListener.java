@@ -152,7 +152,8 @@ public class FileListener extends FileAlterationListenerAdaptor implements Exter
 	}
 	
 	public void executeStop(FileAlterationObserver observer) {
-		System.out.println("Stop.");
+		//DEBUG
+		//System.out.println("Stop.");
 		super.onStop(observer);
 		Iterator<File> fileIterator = this.fileScanMap.keySet().iterator();
 		while (fileIterator.hasNext()) {

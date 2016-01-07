@@ -37,6 +37,7 @@ public class NetHandler extends ChannelHandlerAdapter implements Handler {
 	}
 	
 	private void startAndKeepNettyClient() {
+		
 		EventLoopGroup workerGroup = new NioEventLoopGroup();
 		Bootstrap bootstrap = new Bootstrap();
 		bootstrap.group(workerGroup);
@@ -48,10 +49,11 @@ public class NetHandler extends ChannelHandlerAdapter implements Handler {
 				socketChannel.pipeline().addLast(NetHandler.this);
 			}				
 		});
-		this.channelFuture = bootstrap.connect(ip, port);
-		while(running) {}
 		try {
-			this.channelFuture.channel().closeFuture();
+			this.channelFuture = bootstrap.connect(ip, port).sync();
+			this.channelFuture.channel().closeFuture().sync();	
+		} catch(InterruptedException e) {
+			e.printStackTrace();
 		} finally {
 			workerGroup.shutdownGracefully();
 		}
