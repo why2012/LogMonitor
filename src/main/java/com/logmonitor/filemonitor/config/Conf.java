@@ -11,17 +11,9 @@ public class Conf {
 	private List<ConfItem> itemList;
 	private ConfHandler confHandler = new ConfHandler();
 	private int flushInterval = 2;//seconds
-	private static DELIMITER delimiter = DELIMITER.N;//\n \r\n
 	private int mainBufferSize = 10;//lines
 	private String recoverPath = null;//日志文件读取状态保存地址
 	private boolean enableRecover = false;
-	
-	public enum DELIMITER {
-		N((byte)1) , NR((byte)2);
-		private byte len = 0;
-		DELIMITER(byte len) {this.len = len;}
-		public byte len() {return len;};
-	};
 	
 	public static class ConfHandler {
 		private boolean useStdoutHandler = false;
@@ -57,7 +49,7 @@ public class Conf {
 	
 	public static class ConfItem {
 		private String logPath = "";
-		private String logNameFilter = ".*\\.log";
+		private String logNameFilter = ".+\\.log";
 		private boolean useLogNameFilter = true;
 		private long scanInterval = TimeUnit.SECONDS.toMillis(1);
 		
@@ -150,14 +142,6 @@ public class Conf {
 			flushInterval = 2;
 		}
 		this.flushInterval = flushInterval;
-	}
-
-	public static DELIMITER getDelimiter() {
-		return delimiter;
-	}
-
-	public static void setDelimiter(DELIMITER delimiter) {
-		Conf.delimiter = delimiter;
 	}
 
 	public int getMainBufferSize() {

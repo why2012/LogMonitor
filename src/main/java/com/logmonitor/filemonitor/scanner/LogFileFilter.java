@@ -12,7 +12,7 @@ public class LogFileFilter implements FileFilter {
 	}
 
 	public boolean accept(File pathname) {
-		if (pathname.getPath().matches(this.filterRule)) {
+		if (pathname.getName().matches(this.filterRule)) {
 			return true;
 		} else {
 			return false;

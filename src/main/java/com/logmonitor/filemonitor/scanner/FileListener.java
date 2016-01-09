@@ -17,13 +17,13 @@ import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 
 import com.logmonitor.filemonitor.buffer.Buffer;
-import com.logmonitor.filemonitor.config.Conf;
 
 public class FileListener extends FileAlterationListenerAdaptor implements Externalizable {
 	private static final long serialVersionUID = 6316167668511901932L;
 	private Buffer buffer = null;
 	private Map<File,FileNode> fileScanMap = null;
 	private boolean running = false;
+	private int sepLen = System.getProperty("line.separator").length();
 	private enum STATE {
 		INIT("INIT"), CHANGE("CHANGE"), CREATE("CREATE"), DELETE("DELETE");
 		
@@ -113,7 +113,7 @@ public class FileListener extends FileAlterationListenerAdaptor implements Exter
 					//DEBUG
 					//System.out.println("File:" + file + " , " + "Line: " + (fileNode.reader.getLineNumber() - 1) + " , Byte: " + fileNode.curByte + " , "+newLine);
 					fileNode.nextIndex++;
-					fileNode.curByte += newLine.length() + Conf.getDelimiter().len();
+					fileNode.curByte += newLine.length() + this.sepLen;
 					buffer.insert(newLine);
 				}
 			} while(newLine != null);
@@ -132,19 +132,21 @@ public class FileListener extends FileAlterationListenerAdaptor implements Exter
 				//commons-io 不监控子文件夹
 				//this.initialScanningForAllFiles(allFiles[i], fileFilter);
 			} else if(allFiles[i].isFile() && !this.fileScanMap.containsKey(allFiles[i])) {
-				if (fileFilter == null || ( fileFilter != null && fileFilter.accept(allFiles[i]))) {
-					FileNode fileNode = new FileNode();
-					fileNode.file = allFiles[i];
-					this.fileScanMap.put(allFiles[i], fileNode);
-				} else {
-					continue;
-				}
+				FileNode fileNode = new FileNode();
+				fileNode.file = allFiles[i];
+				this.fileScanMap.put(allFiles[i], fileNode);
 			}
 		}
 		
 		Iterator<File> fileIterator = this.fileScanMap.keySet().iterator();
 		while (fileIterator.hasNext()) {
 			File file = fileIterator.next();
+			if (!file.exists()) {
+				fileIterator.remove();
+			}
+			if (fileFilter != null && !fileFilter.accept(file)) {
+				fileIterator.remove();
+			}
 			//DEBUG
 			//System.out.println("INIT-PROCESS(" + Thread.currentThread().getName() + "): " + file.getPath());
 			this.processFileContent(file, STATE.INIT);

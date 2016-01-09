@@ -28,5 +28,6 @@ public class IOTest {
 			e.printStackTrace();
 		}
 		System.out.println("\n".length() + " , " + text.length() + " , " + byteNum);
+		System.out.println("SepL:" + System.getProperty("line.separator").length());
 	}
 }
