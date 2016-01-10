@@ -10,4 +10,6 @@ public interface Handler extends Runnable {
 	public void notify(String data);
 	public void start();
 	public void stop();
+	public void setModifier(MsgModifier msgModifier);
+	public MsgModifier getModifier();
 }

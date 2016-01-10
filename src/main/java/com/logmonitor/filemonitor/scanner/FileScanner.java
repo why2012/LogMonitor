@@ -5,6 +5,7 @@ import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 
 import com.logmonitor.filemonitor.config.Conf;
+import com.logmonitor.filemonitor.handlers.MsgModifier;
 
 public class FileScanner {
 	private Conf.ConfItem confItem = null;
@@ -24,6 +25,13 @@ public class FileScanner {
 					new LogFileFilter(confItem.getLogNameFilter()));
 		} else {
 			this.observer = new FileAlterationObserver(confItem.getLogPath());
+		}
+		String keyCode = this.confItem.getKeyCode();
+		if (keyCode != null) {
+			MsgModifier msgModifier = new MsgModifier();
+			msgModifier.setKeyCode(keyCode);
+			msgModifier.setKeyName("PROJID");
+			this.fileListener.setMsgModifier(msgModifier);
 		}
 		this.observer.addListener(this.fileListener);
 		this.monitor = new FileAlterationMonitor(confItem.getScanInterval(), this.observer);

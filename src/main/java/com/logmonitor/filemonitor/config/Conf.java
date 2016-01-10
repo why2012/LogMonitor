@@ -52,6 +52,7 @@ public class Conf {
 		private String logNameFilter = ".+\\.log";
 		private boolean useLogNameFilter = true;
 		private long scanInterval = TimeUnit.SECONDS.toMillis(1);
+		private String keyCode = null;
 		
 		public ConfItem(String logPath) {
 			this.logPath = logPath;
@@ -110,6 +111,14 @@ public class Conf {
 
 		public void setScanInterval(long seconds,long millis) {
 			this.scanInterval = TimeUnit.SECONDS.toMillis(seconds) + millis;
+		}
+		
+		public void setKeyCode(String keyCode) {
+			this.keyCode = keyCode;
+		}
+		
+		public String getKeyCode() {
+			return this.keyCode;
 		}
 	}
 	

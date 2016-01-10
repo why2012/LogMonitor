@@ -6,6 +6,7 @@ public class StdoutHandler implements Handler {
 	private boolean running = false;
 	private Thread thread = null;
 	private ConcurrentLinkedQueue<String> dataList = new ConcurrentLinkedQueue<String>();
+	private MsgModifier msgModifier = null;
 
 	public void notify(String data) {
 		this.dataList.add(data);
@@ -14,7 +15,11 @@ public class StdoutHandler implements Handler {
 	public void run() {
 		while(running) {
 			if (dataList.size() > 0) {
-				System.out.println(dataList.poll());
+				String tmpData = dataList.poll();
+				if (this.msgModifier != null) {
+					tmpData = this.msgModifier.append(tmpData);
+				}
+				System.out.println(tmpData);
 			}
 		}
 	}
@@ -33,6 +38,14 @@ public class StdoutHandler implements Handler {
 			return;
 		}
 		this.running = false;
+	}
+
+	public void setModifier(MsgModifier msgModifier) {
+		this.msgModifier = msgModifier;
+	}
+
+	public MsgModifier getModifier() {
+		return this.msgModifier;
 	}
 
 }

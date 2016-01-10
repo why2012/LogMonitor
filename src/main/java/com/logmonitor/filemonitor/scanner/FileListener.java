@@ -17,6 +17,7 @@ import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 
 import com.logmonitor.filemonitor.buffer.Buffer;
+import com.logmonitor.filemonitor.handlers.MsgModifier;
 
 public class FileListener extends FileAlterationListenerAdaptor implements Externalizable {
 	private static final long serialVersionUID = 6316167668511901932L;
@@ -24,6 +25,7 @@ public class FileListener extends FileAlterationListenerAdaptor implements Exter
 	private Map<File,FileNode> fileScanMap = null;
 	private boolean running = false;
 	private int sepLen = System.getProperty("line.separator").length();
+	private MsgModifier msgModifier = null;
 	private enum STATE {
 		INIT("INIT"), CHANGE("CHANGE"), CREATE("CREATE"), DELETE("DELETE");
 		
@@ -109,11 +111,14 @@ public class FileListener extends FileAlterationListenerAdaptor implements Exter
 			do {
 				fileNode.reader.setLineNumber(fileNode.nextIndex);
 				newLine = fileNode.reader.readLine();
-				if (newLine != null) {
+				if (newLine != null && !newLine.equals("")) {
 					//DEBUG
 					//System.out.println("File:" + file + " , " + "Line: " + (fileNode.reader.getLineNumber() - 1) + " , Byte: " + fileNode.curByte + " , "+newLine);
 					fileNode.nextIndex++;
 					fileNode.curByte += newLine.length() + this.sepLen;
+					if (msgModifier != null) {
+						newLine = msgModifier.append(newLine);
+					}
 					buffer.insert(newLine);
 				}
 			} while(newLine != null);
@@ -210,5 +215,13 @@ public class FileListener extends FileAlterationListenerAdaptor implements Exter
 //			System.out.println(file + " ; " + fileNode);
 //			System.out.println("}");
 //		}
+	}
+
+	public MsgModifier getMsgModifier() {
+		return msgModifier;
+	}
+
+	public void setMsgModifier(MsgModifier msgModifier) {
+		this.msgModifier = msgModifier;
 	}
 }

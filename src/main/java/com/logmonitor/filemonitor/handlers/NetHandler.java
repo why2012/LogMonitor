@@ -20,6 +20,7 @@ public class NetHandler extends ChannelHandlerAdapter implements Handler {
 	private boolean running = false;
 	private Thread thread = null;
 	private ConcurrentLinkedQueue<String> dataList = new ConcurrentLinkedQueue<String>();
+	private MsgModifier msgModifier = null;
 	
 	private ChannelFuture channelFuture = null;
 	
@@ -64,6 +65,9 @@ public class NetHandler extends ChannelHandlerAdapter implements Handler {
 		while (running) {
 			if (dataList.size() > 0) {
 				String tmpData = dataList.poll();
+				if (this.msgModifier != null) {
+					tmpData = this.msgModifier.append(tmpData);
+				}
 				ByteBuf buf = ctx.alloc().buffer();
 				buf.writeBytes(tmpData.getBytes());
 				ctx.writeAndFlush(buf);
@@ -92,6 +96,14 @@ public class NetHandler extends ChannelHandlerAdapter implements Handler {
 			return;
 		}
 		this.running = false;
+	}
+
+	public void setModifier(MsgModifier msgModifier) {
+		this.msgModifier = msgModifier;
+	}
+
+	public MsgModifier getModifier() {
+		return this.msgModifier;
 	}
 	
 }
