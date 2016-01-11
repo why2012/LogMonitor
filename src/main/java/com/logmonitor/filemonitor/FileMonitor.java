@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import com.logmonitor.filemonitor.buffer.Buffer;
 import com.logmonitor.filemonitor.buffer.BufferEvent;
@@ -26,6 +27,7 @@ public class FileMonitor {
 	private FileListener[] fileListeners = null;
 	private FileScanner[] fileScanners = null;
 	private HandlerGroup handlerGroup = null;
+	private DataSaveHandler dataSaveHandler = null;
 	
 	public FileMonitor(Conf conf) throws Exception{
 		this.conf = conf;
@@ -55,6 +57,7 @@ public class FileMonitor {
 			}
 			fileScanners[i] = new FileScanner(conf.getItems().get(i),fileListeners[i]);
 		}
+		this.dataSaveHandler = new DataSaveHandler(this, conf.getDataSaveInterval());
 	}
 	
 	public void start() throws Exception {
@@ -64,11 +67,13 @@ public class FileMonitor {
 			fileScanners[i].startScan();
 		}
 		this.handlerGroup.startHandlers();
+		this.dataSaveHandler.start();
 	}
 	
 	public void stop() throws Exception {
 		final int size = conf.getItems().size();
 		this.timeFlusher.stop();
+		this.dataSaveHandler.stop();
 		for (int i = 0 ; i < size ; i++) {
 			fileScanners[i].stopScan();
 		}
@@ -148,4 +153,45 @@ class BufferHandlerImplBufferEventHandler implements BufferEventHandler {
 		this.handlerGroup.processData();
 	}
 	
+}
+
+class DataSaveHandler implements Runnable {
+	private boolean running = false;
+	private FileMonitor fileMonitor = null;
+	private Thread thread = null;
+	private int interval = 3;
+	
+	public DataSaveHandler(FileMonitor fileMonitor,int interval) {
+		this.fileMonitor = fileMonitor;
+		this.interval = interval;
+	}
+		
+	public void run() {
+		while(running) {
+			try {
+				TimeUnit.SECONDS.sleep(interval);
+				fileMonitor.saveStateData();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public void start() {
+		if (running) {
+			return;
+		}
+		running = true;
+		thread = new Thread(this);
+		thread.start();
+	}
+	
+	public void stop() {
+		if (!running) {
+			return;
+		}
+		running = false;
+	}
 }

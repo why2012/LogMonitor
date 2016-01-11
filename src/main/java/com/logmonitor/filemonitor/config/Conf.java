@@ -10,7 +10,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public class Conf {
 	private List<ConfItem> itemList;
 	private ConfHandler confHandler = new ConfHandler();
-	private int flushInterval = 2;//seconds
+	private int flushInterval = 1;//seconds
+	private int dataSaveInterval = 3;//seconds
 	private int mainBufferSize = 10;//lines
 	private String recoverPath = null;//日志文件读取状态保存地址
 	private boolean enableRecover = false;
@@ -189,6 +190,17 @@ public class Conf {
 
 	public void setConfHandler(ConfHandler confHandler) {
 		this.confHandler = confHandler;
+	}
+
+	public int getDataSaveInterval() {
+		return dataSaveInterval;
+	}
+
+	public void setDataSaveInterval(int dataSaveInterval) {
+		if (dataSaveInterval <= 0) {
+			dataSaveInterval = 3;
+		}
+		this.dataSaveInterval = dataSaveInterval;
 	}
 
 }
