@@ -19,8 +19,13 @@ public class Conf {
 	public static class ConfHandler {
 		private boolean useStdoutHandler = false;
 		private boolean useNetHandler = false;
+		private boolean useRedisHandler = false;
 		private String netIp = "127.0.0.1";
 		private int netPort = 3333;
+		private String redisHost = "127.0.0.1";
+		private int redisPort = 6379;
+		private long redisQueueMaxSize = 1000;
+		private String redisQueueKeyName = "logmonitor.msg.queue";
 		
 		public boolean isUseStdoutHandler() {
 			return useStdoutHandler;
@@ -45,6 +50,46 @@ public class Conf {
 		}
 		public void setNetPort(int netPort) {
 			this.netPort = netPort;
+		}
+
+		public String getRedisHost() {
+			return redisHost;
+		}
+
+		public void setRedisHost(String redisHost) {
+			this.redisHost = redisHost;
+		}
+
+		public int getRedisPort() {
+			return redisPort;
+		}
+
+		public void setRedisPort(int redisPort) {
+			this.redisPort = redisPort;
+		}
+
+		public long getRedisQueueMaxSize() {
+			return redisQueueMaxSize;
+		}
+
+		public void setRedisQueueMaxSize(long redisQueueMaxSize) {
+			this.redisQueueMaxSize = redisQueueMaxSize;
+		}
+
+		public String getRedisQueueKeyName() {
+			return redisQueueKeyName;
+		}
+
+		public void setRedisQueueKeyName(String redisQueueKeyName) {
+			this.redisQueueKeyName = redisQueueKeyName;
+		}
+
+		public boolean isUseRedisHandler() {
+			return useRedisHandler;
+		}
+
+		public void setUseRedisHandler(boolean useRedisHandler) {
+			this.useRedisHandler = useRedisHandler;
 		}
 	}
 	

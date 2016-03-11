@@ -3,19 +3,22 @@ package com.logmonitor.authentication;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-
 import com.logmonitor.filemonitor.FileMonitor;
 import com.logmonitor.filemonitor.config.Conf;
 
 public class AuthenticationTest {
+	
+	public static void main(String[] args) throws Throwable {
+		testAuthentication();
+	}
 
-	@Test
-	public void testAuthentication() throws Throwable {
-		Conf conf = this.getConfig();
+	@SuppressWarnings("unused")
+	//@Test
+	public static void testAuthentication() throws Throwable {
+		Conf conf = getConfig();
 		final FileMonitor fileMonitor = new FileMonitor(conf);
 		fileMonitor.start();
-		if (true) {
+		if (false) {
 			System.out.println("Start");
 			TimeUnit.SECONDS.sleep(5);
 			fileMonitor.stop();
@@ -23,8 +26,8 @@ public class AuthenticationTest {
 		}
 	}
 	
-	private Conf getConfig() {
-		Authentication auth = this.getAuth();
+	private static Conf getConfig() {
+		Authentication auth = getAuth();
 		Conf conf = new Conf(); 
 		conf.setRecoverPath("/Users/wanghaiyang/Desktop/logs/seria");
 		conf.setEnableRecover(true);
@@ -41,7 +44,7 @@ public class AuthenticationTest {
 		return conf;
 	}
 	
-	private Authentication getAuth() {
+	private static Authentication getAuth() {
 		Authentication auth = Authentication.getInstance();
 		Project proj01 = new Project();
 		proj01.setDepartment("Search");

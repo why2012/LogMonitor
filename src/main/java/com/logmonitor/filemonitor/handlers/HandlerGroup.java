@@ -25,6 +25,11 @@ public class HandlerGroup {
 			Handler handler = new NetHandler(confHandler.getNetIp(), confHandler.getNetPort());
 			this.handlers.add(handler);
 		}
+
+		if (confHandler.isUseRedisHandler()) {
+			Handler handler = new RedisHandler(confHandler.getRedisHost(), confHandler.getRedisPort(), confHandler.getRedisQueueMaxSize(), confHandler.getRedisQueueKeyName());
+			this.handlers.add(handler);
+		}
 	}
 	
 	public void processData() {

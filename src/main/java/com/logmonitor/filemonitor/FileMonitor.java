@@ -28,6 +28,7 @@ public class FileMonitor {
 	private FileScanner[] fileScanners = null;
 	private HandlerGroup handlerGroup = null;
 	private DataSaveHandler dataSaveHandler = null;
+	private ShutdownHook shutdownHook = null;
 	
 	public FileMonitor(Conf conf) throws Exception{
 		this.conf = conf;
@@ -58,6 +59,8 @@ public class FileMonitor {
 			fileScanners[i] = new FileScanner(conf.getItems().get(i),fileListeners[i]);
 		}
 		this.dataSaveHandler = new DataSaveHandler(this, conf.getDataSaveInterval());
+		this.shutdownHook = new ShutdownHook(this);
+		Runtime.getRuntime().addShutdownHook(this.shutdownHook);
 	}
 	
 	public void start() throws Exception {
@@ -193,5 +196,30 @@ class DataSaveHandler implements Runnable {
 			return;
 		}
 		running = false;
+	}
+}
+
+class ShutdownHook extends Thread {
+	private FileMonitor fileMonitor = null;
+	
+	public ShutdownHook(FileMonitor fileMonitor) {
+		this.fileMonitor = fileMonitor;
+	}
+	
+	@Override
+	public void run() {
+		try {
+			this.fileMonitor.saveStateData();
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Save data failed.Try again.");
+			try {
+				this.fileMonitor.saveStateData();
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				System.out.println("Save data failed.");
+			}
+		}
+		System.out.println("Data saved.");
 	}
 }
