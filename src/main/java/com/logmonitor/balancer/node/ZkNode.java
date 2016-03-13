@@ -3,7 +3,7 @@ package com.logmonitor.balancer.node;
 /**
  * Created by wanghaiyang on 16/3/12.
  */
-public class ZkNode {
+public abstract class ZkNode {
     protected String nodePath = null;
     protected String nodeId = null;
 
@@ -13,6 +13,7 @@ public class ZkNode {
 
     public void setNodePath(String nodePath) {
         this.nodePath = nodePath;
+        this.nodeId = nodePath.split("\\|")[1];
     }
 
     public String getNodeId() {
@@ -22,4 +23,6 @@ public class ZkNode {
     public void setNodeId(String nodeId) {
         this.nodeId = nodeId;
     }
+
+    public abstract String getNodeName();
 }

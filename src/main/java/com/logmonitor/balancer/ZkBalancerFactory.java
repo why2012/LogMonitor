@@ -32,8 +32,12 @@ public class ZkBalancerFactory {
     }
 
     public ZkBalancer getZkBalancer() {
+        return getZkBalancer(true);
+    }
+
+    public ZkBalancer getZkBalancer(boolean useCache) {
         ZkBalancer zkBalancer = zkBalancerThreadLocal.get();
-        if (zkBalancer == null) {
+        if (zkBalancer == null || !useCache) {
             String parentPath = "/" + configuration.getZkTopNodeName() + "/";
             switch (configuration.getZkMode()) {
                 case SOURCE:
@@ -42,7 +46,7 @@ public class ZkBalancerFactory {
                             configuration.getSessionTimeoutMs(),
                             configuration.getConnectionTimeoutMs(),
                             retryPolicy);
-                    zkBalancer.setParentPath(parentPath + configuration.getZkSourceTopNodeName() + "/");
+                    zkBalancer.setParentPath(parentPath + configuration.getZkSourceTopNodeName());
                     zkBalancer.setNodeMode(configuration.getZkSourceNodeMode());
                     break;
                 case CONSUME:
@@ -51,15 +55,23 @@ public class ZkBalancerFactory {
                             configuration.getSessionTimeoutMs(),
                             configuration.getConnectionTimeoutMs(),
                             retryPolicy);
-                    zkBalancer.setParentPath(parentPath + configuration.getZkConsumeTopNodeName() + "/");
+                    zkBalancer.setParentPath(parentPath + configuration.getZkConsumeTopNodeName());
                     zkBalancer.setNodeMode(configuration.getZkConsumeNodeMode());
                     break;
                 default:
-                    throw new RuntimeException("Illegal Zk Mode: " + configuration.getZkMode());
+                    zkBalancer = new ZkBalancer(
+                            configuration.getZkHost(),
+                            configuration.getSessionTimeoutMs(),
+                            configuration.getConnectionTimeoutMs(),
+                            retryPolicy);
+                    zkBalancer.setParentPath(parentPath);
+                    zkBalancer.setNodeMode(Configuration.ZkCreateMode.EPHEMERAL);
             }
             zkBalancer.setZkSourceParentPath(configuration.getZkSourceParentPath());
             zkBalancer.setZkConsumeParentPath(configuration.getZkConsumeParentPath());
-            zkBalancerThreadLocal.set(zkBalancer);
+            if (useCache) {
+                zkBalancerThreadLocal.set(zkBalancer);
+            }
         }
         return zkBalancer;
     }

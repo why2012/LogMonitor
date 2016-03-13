@@ -18,7 +18,7 @@ public class ZkBalancerForConsume extends ZkBalancer {
 
     public ConsumeId registerConsume(ConsumeNode consumeNode) {
         ConsumeId consumeId = new ConsumeId();
-        String path = parentPath + consumeId.getUniqueId();
+        String path = parentPath + "/" + consumeId.getUniqueId();
         createNode(path);
         consumeNode.setNodePath(path);
         consumeNode.setNodeId(consumeId.getUniqueId());
@@ -27,23 +27,5 @@ public class ZkBalancerForConsume extends ZkBalancer {
 
     public boolean removeConsume(ConsumeNode consumeNode) {
         return deleteNode(consumeNode.getNodePath());
-    }
-
-    public ConsumeNode analyzeConsumeNode(ConsumeNode consumeNode) {
-        try {
-            List<String> children = client.getChildren().forPath(consumeNode.getNodePath());
-            for (String sourcePath : children) {
-                sourcePath = zkSourceParentPath + sourcePath;
-                SourceNode sourceNode = new SourceNode();
-                getByNodeObj(sourceNode, sourcePath);
-                sourceNode.setNodePath(sourcePath);
-                sourceNode.setNodeId(sourcePath.split("|")[1]);
-                consumeNode.addSourceNode(sourcePath, sourceNode);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return consumeNode;
     }
 }

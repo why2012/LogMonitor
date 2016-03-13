@@ -12,12 +12,13 @@ public class Configuration {
     private List<String> connectString = new ArrayList<String>();
     private int sessionTimeoutMs = 5000;
     private int connectionTimeoutMs = 3000;
-    public enum ZkMode {SOURCE, CONSUME};
+    public enum ZkMode {SOURCE, CONSUME, NORMAL};
     public enum ZkCreateMode {PERSISTENT, EPHEMERAL};
     private ZkMode zkMode = ZkMode.SOURCE;
     private String zkTopNodeName = "logmonitor";
     private String zkSourceTopNodeName = "source/nodes";
     private String zkConsumeTopNodeName = "consume/nodes";
+    //Ephemeral node can not have children
     private ZkCreateMode zkSourceNodeMode = ZkCreateMode.PERSISTENT;
     private ZkCreateMode zkConsumeNodeMode = ZkCreateMode.PERSISTENT;
 
@@ -105,10 +106,10 @@ public class Configuration {
     }
 
     public String getZkSourceParentPath() {
-        return "/" + zkTopNodeName + "/" + zkSourceTopNodeName + "/";
+        return "/" + zkTopNodeName + "/" + zkSourceTopNodeName;
     }
 
     public String getZkConsumeParentPath() {
-        return "/" + zkTopNodeName + "/" + zkConsumeTopNodeName + "/";
+        return "/" + zkTopNodeName + "/" + zkConsumeTopNodeName;
     }
 }

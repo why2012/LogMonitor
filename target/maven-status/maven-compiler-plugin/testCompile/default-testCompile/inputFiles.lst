@@ -1,4 +1,6 @@
-/Users/wanghaiyang/Documents/workspace/filemonitor/src/test/java/com/logmonitor/filemonitor/MonitorTest.java
-/Users/wanghaiyang/Documents/workspace/filemonitor/src/test/java/com/logmonitor/filemonitor/IOTest.java
-/Users/wanghaiyang/Documents/workspace/filemonitor/src/test/java/com/logmonitor/filemonitor/ScannerTest.java
-/Users/wanghaiyang/Documents/workspace/filemonitor/src/test/java/com/logmonitor/authentication/AuthenticationTest.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/test/java/com/logmonitor/filemonitor/IOTest.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/test/java/com/logmonitor/filemonitor/ScannerTest.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/test/java/com/logmonitor/balancer/ZkMonitorTest.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/test/java/com/logmonitor/authentication/AuthenticationTest.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/test/java/com/logmonitor/filemonitor/MonitorTest.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/test/java/com/logmonitor/balancer/ZkBalancerFactoryTest.java

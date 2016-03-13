@@ -1,13 +1,17 @@
 package com.logmonitor.balancer.zkbalancer;
 
 import com.logmonitor.balancer.Configuration;
+import com.logmonitor.balancer.node.ConsumeNode;
 import com.logmonitor.balancer.node.SourceNode;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.zookeeper.CreateMode;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by wanghaiyang on 16/3/12.
@@ -36,6 +40,26 @@ public class ZkBalancer {
         this.zkConsumeParentPath = zkConsumeParentPath;
     }
 
+    public PathChildrenCache getPathChildrenCache(String path, boolean dataIsCompressed) {
+        PathChildrenCache pathChildrenCache = new PathChildrenCache(client, path, dataIsCompressed);
+        return pathChildrenCache;
+    }
+
+    public PathChildrenCache getPathChildrenCache(Configuration.ZkMode zkMode, boolean dataIsCompressed) {
+        PathChildrenCache pathChildrenCache = null;
+        switch (zkMode) {
+            case SOURCE:
+                pathChildrenCache = new PathChildrenCache(client, zkSourceParentPath, dataIsCompressed);
+                break;
+            case CONSUME:
+                pathChildrenCache = new PathChildrenCache(client, zkConsumeParentPath, dataIsCompressed);
+                break;
+            default:
+                throw new RuntimeException("Illegal ZkMode: " + zkMode);
+        }
+        return pathChildrenCache;
+    }
+
     public void setNodeMode(Configuration.ZkCreateMode nodeMode) {
         switch (nodeMode) {
             case PERSISTENT:
@@ -62,7 +86,7 @@ public class ZkBalancer {
         try {
             client.create().creatingParentsIfNeeded().withMode(nodeMode)
                     .forPath(path);
-        } catch (Exception e) {
+        } catch (Exception e) {e.printStackTrace();
             throw new RuntimeException("Failed to create node: " + path, e);
         }
     }
@@ -112,6 +136,22 @@ public class ZkBalancer {
         }
     }
 
+    public List<ConsumeNode> getAllConsumeNodes() {
+        List<ConsumeNode> consumeNodeList = new ArrayList<ConsumeNode>();
+        try {
+            List<String> pathList = client.getChildren().forPath(zkConsumeParentPath);
+            for (String path : pathList) {
+                ConsumeNode consumeNode = new ConsumeNode();
+                consumeNode.setNodePath(zkConsumeParentPath + "/" + path);
+                analyzeConsumeNode(consumeNode);
+                consumeNodeList.add(consumeNode);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return consumeNodeList;
+    }
+
     public boolean deleteNode(String path) {
         try {
             client.delete().guaranteed().deletingChildrenIfNeeded().forPath(path);
@@ -123,5 +163,22 @@ public class ZkBalancer {
 
     public void close() {
         client.close();
+    }
+
+    public ConsumeNode analyzeConsumeNode(ConsumeNode consumeNode) {
+        try {
+            List<String> children = client.getChildren().forPath(consumeNode.getNodePath());
+            for (String sourcePath : children) {
+                sourcePath = zkSourceParentPath + "/" + sourcePath;
+                SourceNode sourceNode = new SourceNode();
+                getByNodeObj(sourceNode, sourcePath);
+                sourceNode.setNodePath(sourcePath);
+                consumeNode.addSourceNode(sourcePath, sourceNode);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return consumeNode;
     }
 }

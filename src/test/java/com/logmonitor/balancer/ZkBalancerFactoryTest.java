@@ -7,10 +7,83 @@ import com.logmonitor.balancer.zkbalancer.ZkBalancerForConsume;
 import com.logmonitor.balancer.zkbalancer.ZkBalancerForSource;
 import org.junit.Test;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
+
 /**
  * Created by wanghaiyang on 16/3/12.
  */
 public class ZkBalancerFactoryTest {
+    private enum COMMAND {
+        CREATE_SOURCE,
+        CREATE_CONSUME,
+        DELETE_SOURCE,
+        DELETE_CONSUME
+    };
+
+    public static void main(String[] _args) throws Exception {
+        ZkBalancerForSource zkBalancerForSource = getZkBalancerForSource();
+        ZkBalancerForConsume zkBalancerForConsume = getZkBalancerForConsume();
+        String commandLine = "";
+        String args = "";
+        Map<String, COMMAND> commandMap = new HashMap<String, COMMAND>();
+        commandMap.put("create-source", COMMAND.CREATE_SOURCE);
+        commandMap.put("delete-source", COMMAND.DELETE_SOURCE);
+        commandMap.put("create-consume", COMMAND.CREATE_CONSUME);
+        commandMap.put("delete-consume", COMMAND.DELETE_CONSUME);
+        Scanner scanner = new Scanner(System.in);
+        while(true) {
+            commandLine = scanner.nextLine();
+            if (commandLine.equalsIgnoreCase("quit")) {
+                break;
+            }
+            if (commandLine.contains(":")) {
+                String[] arr = commandLine.split(":");
+                if (arr.length > 1) {
+                    args = arr[1].trim();
+                    commandLine = commandLine.split(":")[0].trim();
+                }
+            }
+            COMMAND command = commandMap.get(commandLine.toLowerCase());
+            if (command == null) {
+                System.err.println("No such command: " + commandLine);
+                continue;
+            }
+            SourceNode sourceNode = null;
+            ConsumeNode consumeNode = null;
+            switch (command) {
+                case CREATE_SOURCE:
+                    sourceNode = new SourceNode("127.0.0.1", 1273, SourceNode.DIRECTION.RPOP);
+                    zkBalancerForSource.registerSource(sourceNode);
+                    System.out.println("[SourceNodePath]: " + sourceNode.getNodePath());
+                    break;
+                case CREATE_CONSUME:
+                    consumeNode = new ConsumeNode();
+                    zkBalancerForConsume.registerConsume(consumeNode);
+                    System.out.println("[ConsumeNodePath]: " + consumeNode.getNodePath());
+                    break;
+                case DELETE_SOURCE:
+                    sourceNode = new SourceNode();
+                    sourceNode.setNodePath(args);
+                    System.out.println(zkBalancerForSource.removeSource(sourceNode) + " -> " + args);
+                    break;
+                case DELETE_CONSUME:
+                    consumeNode = new ConsumeNode();
+                    consumeNode.setNodePath(args);
+                    System.out.println(zkBalancerForConsume.removeConsume(consumeNode) + " -> " + args);
+                    break;
+                default:
+                    System.err.println("No such command: " + commandLine);
+            }
+        }
+        zkBalancerForConsume.close();
+        zkBalancerForSource.close();
+        scanner.close();
+    }
+
     //@Test
     public void testFactorySourceRegister() throws Exception {
         ZkBalancerForSource zkBalancerForSource = getZkBalancerForSource();
@@ -19,7 +92,7 @@ public class ZkBalancerFactoryTest {
         System.out.println(sourceNode.getNodePath());
     }
 
-    @Test
+    //@Test
     public void testFactorySourceRemove() throws Exception {
         ZkBalancerForSource zkBalancerForSource = getZkBalancerForSource();
         SourceNode sourceNode = new SourceNode("127.0.0.1", 1273, SourceNode.DIRECTION.RPOP);
@@ -68,7 +141,7 @@ public class ZkBalancerFactoryTest {
         Configuration configuration = new Configuration();
         configuration.addZkHost("127.0.0.1:2181");
         ZkBalancerFactory zkBalancerFactory = ZkBalancerFactory.getInstance(configuration);
-        ZkBalancerForSource zkBalancerForSource = (ZkBalancerForSource)zkBalancerFactory.getZkBalancer();
+        ZkBalancerForSource zkBalancerForSource = (ZkBalancerForSource)zkBalancerFactory.getZkBalancer(false);
         return zkBalancerForSource;
     }
 }

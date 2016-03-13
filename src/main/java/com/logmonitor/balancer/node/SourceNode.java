@@ -1,5 +1,7 @@
 package com.logmonitor.balancer.node;
 
+import com.logmonitor.balancer.ids.SourceId;
+
 /**
  * Created by wanghaiyang on 16/3/12.
  */
@@ -63,6 +65,11 @@ public class SourceNode extends ZkNode{
 
     public void setAllocated(boolean allocated) {
         this._allocated = allocated;
+    }
+
+    @Override
+    public String getNodeName() {
+        return SourceId.prefix + nodeId;
     }
 
     public String getNodeProperty() {

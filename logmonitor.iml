@@ -25,5 +25,6 @@
     <orderEntry type="library" name="Maven: io.netty:netty:3.7.0.Final" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:16.0.1" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.6" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.curator:curator-recipes:2.9.1" level="project" />
   </component>
 </module>
