@@ -20,6 +20,10 @@ public class ConsumeNode extends ZkNode {
         sourceNodeMap.remove(path);
     }
 
+    public boolean containsSourceNode(String path) {
+        return sourceNodeMap.containsKey(path);
+    }
+
     public Set<Map.Entry<String, SourceNode>> getEntrySet() {
         return sourceNodeMap.entrySet();
     }

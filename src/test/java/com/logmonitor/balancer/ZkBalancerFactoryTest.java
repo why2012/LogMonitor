@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -21,7 +22,9 @@ public class ZkBalancerFactoryTest {
         CREATE_SOURCE,
         CREATE_CONSUME,
         DELETE_SOURCE,
-        DELETE_CONSUME
+        DELETE_CONSUME,
+        LS_SOURCE,
+        LS_CONSUME
     };
 
     public static void main(String[] _args) throws Exception {
@@ -34,6 +37,8 @@ public class ZkBalancerFactoryTest {
         commandMap.put("delete-source", COMMAND.DELETE_SOURCE);
         commandMap.put("create-consume", COMMAND.CREATE_CONSUME);
         commandMap.put("delete-consume", COMMAND.DELETE_CONSUME);
+        commandMap.put("ls-source", COMMAND.LS_SOURCE);
+        commandMap.put("ls-consume", COMMAND.LS_CONSUME);
         Scanner scanner = new Scanner(System.in);
         while(true) {
             commandLine = scanner.nextLine();
@@ -74,6 +79,18 @@ public class ZkBalancerFactoryTest {
                     consumeNode = new ConsumeNode();
                     consumeNode.setNodePath(args);
                     System.out.println(zkBalancerForConsume.removeConsume(consumeNode) + " -> " + args);
+                    break;
+                case LS_SOURCE:
+                    List<SourceNode> sourceNodeList = zkBalancerForSource.getAllSourceNodes();
+                    for (SourceNode sourceNode1 : sourceNodeList) {
+                        System.out.println(sourceNode1.getNodePath());
+                    }
+                    break;
+                case LS_CONSUME:
+                    List<ConsumeNode> consumeNodeList = zkBalancerForConsume.getAllConsumeNodes();
+                    for (ConsumeNode consumeNode1 : consumeNodeList) {
+                        System.out.println(consumeNode1.getNodePath());
+                    }
                     break;
                 default:
                     System.err.println("No such command: " + commandLine);

@@ -152,6 +152,13 @@ public class ZkBalancer {
         return consumeNodeList;
     }
 
+    public ConsumeNode getConsumeNode(String path) {
+        ConsumeNode consumeNode = new ConsumeNode();
+        consumeNode.setNodePath(path);
+        analyzeConsumeNode(consumeNode);
+        return consumeNode;
+    }
+
     public List<SourceNode> getAllSourceNodes() {
         List<SourceNode> sourceNodeList = new ArrayList<SourceNode>();
         try {

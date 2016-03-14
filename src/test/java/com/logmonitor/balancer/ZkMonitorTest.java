@@ -19,13 +19,12 @@ public class ZkMonitorTest {
         configuration.setZkMode(Configuration.ZkMode.NORMAL);
         ZkBalancerFactory zkBalancerFactory = ZkBalancerFactory.getInstance(configuration);
         final ZkBalancer zkBalancer = zkBalancerFactory.getZkBalancer();
-
         final ZkMonitor zkMonitor = new ZkMonitor(new SourceNodeCountStrategy());
         zkMonitor.registZkBalancer(zkBalancer);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                zkBalancer.close();
+                zkMonitor.stop();
                 System.out.println("Quit.");
             }
         });

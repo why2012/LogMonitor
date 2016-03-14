@@ -31,6 +31,10 @@ public class SourceNodeWrapper {
         strategyVirtualNodeList.add(consumeNode);
     }
 
+    public void removeNode(StrategyVirtualNode consumeNode) {
+        strategyVirtualNodeList.remove(consumeNode);
+    }
+
     public void clearNodes() {
         strategyVirtualNodeList.clear();
     }

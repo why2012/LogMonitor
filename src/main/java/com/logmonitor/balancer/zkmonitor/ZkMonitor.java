@@ -12,6 +12,7 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class ZkMonitor implements PathChildrenCacheListener{
     //sorted by nodes' weight, stored consumeNode and its properties
     private List<StrategyVirtualNode> strategyVirtualNodeList = new ArrayList<StrategyVirtualNode>();
+    private Map<String, StrategyVirtualNode> stringStrategyVirtualNodeMap = new HashMap<String, StrategyVirtualNode>();
     //path -> SourceNodeWrapper, stored SourceNode and its owners
     private Map<String, SourceNodeWrapper> sourceNodeWrapperMap = new HashMap<String, SourceNodeWrapper>();
     //SourceNode cache, if no consume node when SourceNode added, then cache the SourceNode.
@@ -32,7 +34,8 @@ public class ZkMonitor implements PathChildrenCacheListener{
     //select first few consume nodes, allocate sourcenode to these consume node
     private int selectCount = 2;
     private ZkBalancer zkBalancer;
-    private PathChildrenCache pathChildrenCache = null;
+    private PathChildrenCache pathChildrenCacheSource = null;
+    private PathChildrenCache pathChildrenCacheConsume = null;
 
     public ZkMonitor(Strategy strategy) {
         this.strategy = strategy;
@@ -42,15 +45,23 @@ public class ZkMonitor implements PathChildrenCacheListener{
         try {
             this.zkBalancer = zkBalancer;
             scanNodesAndInit();
-            if (pathChildrenCache != null) {
-                pathChildrenCache.close();
+            if (pathChildrenCacheSource != null) {
+                pathChildrenCacheSource.close();
             }
-            pathChildrenCache = zkBalancer.getPathChildrenCache(Configuration.ZkMode.SOURCE, true);
-            pathChildrenCache.start();
-            pathChildrenCache.getListenable().addListener(this);
+            pathChildrenCacheSource = zkBalancer.getPathChildrenCache(Configuration.ZkMode.SOURCE, true);
+            pathChildrenCacheSource.start();
+            pathChildrenCacheSource.getListenable().addListener(this);
+
+            if (pathChildrenCacheConsume != null) {
+                pathChildrenCacheConsume.close();
+            }
+            pathChildrenCacheConsume = zkBalancer.getPathChildrenCache(Configuration.ZkMode.CONSUME, true);
+            pathChildrenCacheConsume.start();
+            pathChildrenCacheConsume.getListenable().addListener(new ConsumeNodeWatcher());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        System.out.println(this);
     }
 
     private void scanNodesAndInit() {
@@ -65,9 +76,13 @@ public class ZkMonitor implements PathChildrenCacheListener{
             strategyVirtualNode.setSourceNodeNum(sourceNodeWrapperMap.size());
             strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(consumeNode.getSourceNodeMap().size());
             for (Map.Entry<String, SourceNode> entry : consumeNode.getSourceNodeMap().entrySet()) {
-                sourceNodeWrapperMap.get(entry.getKey()).addNode(strategyVirtualNode);
+                SourceNodeWrapper sourceNodeWrapper = sourceNodeWrapperMap.get(entry.getKey());
+                if (sourceNodeWrapper != null) {
+                    sourceNodeWrapper.addNode(strategyVirtualNode);
+                }
             }
             strategyVirtualNodeList.add(strategyVirtualNode);
+            stringStrategyVirtualNodeMap.put(consumeNode.getNodePath(), strategyVirtualNode);
         }
         for (StrategyVirtualNode strategyVirtualNode : strategyVirtualNodeList) {
             strategyVirtualNode.setConsumeNodeNum(strategyVirtualNodeList.size());
@@ -78,7 +93,6 @@ public class ZkMonitor implements PathChildrenCacheListener{
 
     private synchronized void updateWeightList() {
         strategyVirtualNodeList.sort(strategy);
-        System.out.println(this);
     }
 
     private void addSourceNodeWrapper(String sourceNodePath) {
@@ -90,17 +104,22 @@ public class ZkMonitor implements PathChildrenCacheListener{
             SourceNodeWrapper sourceNodeWrapper = new SourceNodeWrapper(sourceNode);
             if (strategyVirtualNodeList.size() <= 0) {
                 //cache the SourceNode
+                sourceNodeWrapperMap.put(sourceNodePath, sourceNodeWrapper);
                 sourceNodeWrapperCache.add(sourceNodeWrapper);
                 return;
             }
             sourceNodeWrapperMap.put(sourceNodePath, sourceNodeWrapper);
             for (StrategyVirtualNode strategyVirtualNode : strategyVirtualNodes) {
                 sourceNodeWrapper.addNode(strategyVirtualNode);
+                strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(strategyVirtualNode.getCurConsumeNodeOwnedSourceNum() + 1);
+                strategyVirtualNode.getConsumeNode().addSourceNode(sourceNodePath, sourceNode);
+                mountSourceNode(sourceNode, strategyVirtualNode.getConsumeNode());
+            }
+
+            for (StrategyVirtualNode strategyVirtualNode : strategyVirtualNodeList) {
                 strategyVirtualNode.setConsumeNodeNum(strategyVirtualNodeList.size());
                 strategyVirtualNode.setSourceNodeNum(sourceNodeWrapperMap.size());
-                strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(strategyVirtualNode.getCurConsumeNodeOwnedSourceNum() + 1);
                 strategyVirtualNode.setWeight(strategy.caculateWeight(strategyVirtualNode));
-                mountSourceNode(sourceNode, strategyVirtualNode.getConsumeNode());
             }
             updateWeightList();
         }
@@ -126,30 +145,216 @@ public class ZkMonitor implements PathChildrenCacheListener{
             }
             sourceNodeWrapperMap.remove(sourceNodePath);
             for (StrategyVirtualNode strategyVirtualNode : sourceNodeWrapper.getStrategyVirtualNodeList()) {
+                strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(strategyVirtualNode.getCurConsumeNodeOwnedSourceNum() - 1);
+                strategyVirtualNode.getConsumeNode().removeSourceNode(sourceNodePath);
+                unmountSourceNode(sourceNodeWrapper.getSourceNode(), strategyVirtualNode.getConsumeNode());
+            }
+
+            for (StrategyVirtualNode strategyVirtualNode : strategyVirtualNodeList) {
                 strategyVirtualNode.setConsumeNodeNum(strategyVirtualNodeList.size());
                 strategyVirtualNode.setSourceNodeNum(sourceNodeWrapperMap.size());
-                strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(strategyVirtualNode.getCurConsumeNodeOwnedSourceNum() - 1);
                 strategyVirtualNode.setWeight(strategy.caculateWeight(strategyVirtualNode));
-                unmountSourceNode(sourceNodeWrapper.getSourceNode(), strategyVirtualNode.getConsumeNode());
             }
             updateWeightList();
         }
     }
 
+    /**
+     * without caching extra sourceNode
+     * @param sourceNode
+     * @param _strategyVirtualNode
+     * @return op result
+     */
+    private boolean unmountSourceNodeFromConsumeNode(SourceNode sourceNode, StrategyVirtualNode _strategyVirtualNode) {
+        ConsumeNode consumeNode = _strategyVirtualNode.getConsumeNode();
+        if (!consumeNode.containsSourceNode(sourceNode.getNodePath())) {
+            return false;
+        }
+        consumeNode.removeSourceNode(sourceNode.getNodePath());
+        StrategyVirtualNode strategyVirtualNode = stringStrategyVirtualNodeMap.get(consumeNode.getNodePath());
+        strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(consumeNode.getSourceNodeMap().size());
+        sourceNodeWrapperMap.get(sourceNode.getNodePath()).removeNode(strategyVirtualNode);
+        unmountSourceNode(sourceNode, consumeNode);
+        _strategyVirtualNode.setWeight(strategy.caculateWeight(strategyVirtualNode));
+        updateWeightList();
+        return true;
+    }
+
+    /**
+     * if consumeNode already contains the sourceNode, op failed
+     * @param sourceNode
+     * @param _strategyVirtualNode
+     * @return op result
+     */
+    private boolean mountSourceNodeOnConsumeNode(SourceNode sourceNode, StrategyVirtualNode _strategyVirtualNode) {
+        ConsumeNode consumeNode = _strategyVirtualNode.getConsumeNode();
+        if (consumeNode.containsSourceNode(sourceNode.getNodePath())) {
+            return false;
+        }
+        consumeNode.addSourceNode(sourceNode.getNodePath(), sourceNode);
+        StrategyVirtualNode strategyVirtualNode = stringStrategyVirtualNodeMap.get(consumeNode.getNodePath());
+        strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(consumeNode.getSourceNodeMap().size());
+        sourceNodeWrapperMap.get(sourceNode.getNodePath()).addNode(strategyVirtualNode);
+        mountSourceNode(sourceNode, consumeNode);
+        _strategyVirtualNode.setWeight(strategy.caculateWeight(strategyVirtualNode));
+        updateWeightList();
+        return true;
+    }
+
+    private void addConusmeNode(String consumeNodePath) {
+        synchronized (strategyVirtualNodeList) {
+            ConsumeNode consumeNode = zkBalancer.getConsumeNode(consumeNodePath);
+            StrategyVirtualNode strategyVirtualNode = new StrategyVirtualNode(consumeNode);
+            strategyVirtualNode.setSourceNodeNum(sourceNodeWrapperMap.size());
+            strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(consumeNode.getSourceNodeMap().size());
+            for (Map.Entry<String, SourceNode> entry : consumeNode.getSourceNodeMap().entrySet()) {
+                SourceNodeWrapper sourceNodeWrapper = sourceNodeWrapperMap.get(entry.getKey());
+                if (sourceNodeWrapper != null) {
+                    sourceNodeWrapper.addNode(strategyVirtualNode);
+                }
+            }
+            strategyVirtualNodeList.add(strategyVirtualNode);
+            stringStrategyVirtualNodeMap.put(consumeNodePath, strategyVirtualNode);
+            for (StrategyVirtualNode strategyVirtualNodeExit : strategyVirtualNodeList) {
+                strategyVirtualNodeExit.setConsumeNodeNum(strategyVirtualNodeList.size());
+                strategyVirtualNodeExit.setWeight(strategy.caculateWeight(strategyVirtualNodeExit));
+            }
+            updateWeightList();
+            //重新分配SourceNode
+            rebalanceSourceNode();
+        }
+    }
+
+    private void removeConsumeNode(String consumeNodePath) {
+        synchronized (strategyVirtualNodeList) {
+            StrategyVirtualNode strategyVirtualNode = stringStrategyVirtualNodeMap.remove(consumeNodePath);
+            if (strategyVirtualNode == null) {
+                return;
+            }
+            strategyVirtualNodeList.remove(strategyVirtualNode);
+            Map<String, SourceNode> sourceNodeMap = strategyVirtualNode.getConsumeNode().getSourceNodeMap();
+            List<SourceNodeWrapper> willCachedSourceNodes = new ArrayList<SourceNodeWrapper>();
+            for (String sourceNodePath : sourceNodeMap.keySet()) {
+                SourceNodeWrapper sourceNodeWrapper = sourceNodeWrapperMap.get(sourceNodePath);
+                sourceNodeWrapper.removeNode(strategyVirtualNode);
+                if (sourceNodeWrapper.nodesLength() == 0) {
+                    willCachedSourceNodes.add(sourceNodeWrapper);
+                    sourceNodeWrapperMap.remove(sourceNodePath);
+                    zkBalancer.setNodeData(sourceNodeWrapper.getSourceNode().getAllocPath(), new Boolean(false).toString().getBytes());
+                }
+            }
+            for (StrategyVirtualNode strategyVirtualNodeExit : strategyVirtualNodeList) {
+                strategyVirtualNodeExit.setConsumeNodeNum(strategyVirtualNodeList.size());
+                strategyVirtualNodeExit.setWeight(strategy.caculateWeight(strategyVirtualNodeExit));
+            }
+            updateWeightList();
+            //缓存并重新分配SourceNode
+            cacheExtraSourceNode(strategyVirtualNode, willCachedSourceNodes);
+            rebalanceSourceNode();
+        }
+    }
+
+    private void cacheExtraSourceNode(StrategyVirtualNode strategyVirtualNode, List<SourceNodeWrapper> willCahcedSourceNode) {
+        sourceNodeWrapperCache.addAll(willCahcedSourceNode);
+    }
+
+    private void rebalanceSourceNode() {
+        StrategyVirtualNode strategyVirtualNodeMax = null;
+        StrategyVirtualNode strategyVirtualNodeMin = null;
+        int totalSourceNodePossessedNum = 0;
+        int avgSourceNodePossessedNum = 1;
+        int maxSourceNodePossessedNum = 0;
+        int minSourceNodePossessedNum = Integer.MAX_VALUE;
+        if (strategyVirtualNodeList.size() > 1) {
+            for (StrategyVirtualNode strategyVirtualNode : strategyVirtualNodeList) {
+                int curPossessedNum = strategyVirtualNode.getCurConsumeNodeOwnedSourceNum();
+                totalSourceNodePossessedNum += curPossessedNum;
+                if (curPossessedNum > maxSourceNodePossessedNum) {
+                    maxSourceNodePossessedNum = curPossessedNum;
+                    strategyVirtualNodeMax = strategyVirtualNode;
+                } else if (curPossessedNum < minSourceNodePossessedNum) {
+                    minSourceNodePossessedNum = curPossessedNum;
+                    strategyVirtualNodeMin = strategyVirtualNode;
+                }
+            }
+            int avg = totalSourceNodePossessedNum / strategyVirtualNodeList.size();
+            avgSourceNodePossessedNum = avg == 0 ? 1 : avg;
+            if (strategyVirtualNodeMax != strategyVirtualNodeMin && maxSourceNodePossessedNum > 0) {
+                int nodeNumGap = maxSourceNodePossessedNum - avgSourceNodePossessedNum;
+                SourceNode sourceNode = strategyVirtualNodeMax.getConsumeNode().getEntrySet().iterator().next().getValue();
+                if (nodeNumGap != 0 && strategyVirtualNodeMin.getCurConsumeNodeOwnedSourceNum() < avgSourceNodePossessedNum) {
+                    unmountSourceNodeFromConsumeNode(sourceNode, strategyVirtualNodeMax);
+                }
+                if (strategyVirtualNodeMin.getCurConsumeNodeOwnedSourceNum() < avgSourceNodePossessedNum) {
+                    mountSourceNodeOnConsumeNode(sourceNode, strategyVirtualNodeMin);
+                }
+            }
+        }
+
+        if (strategyVirtualNodeList.size() > 0) {
+            for (SourceNodeWrapper sourceNodeWrapper : sourceNodeWrapperCache) {
+                addSourceNodeWrapper(sourceNodeWrapper.getSourceNode().getNodePath());
+            }
+            sourceNodeWrapperCache.clear();
+        }
+    }
+
+    /**
+     * SourceNode Watcher
+     */
     public void childEvent(CuratorFramework curatorFramework, PathChildrenCacheEvent pathChildrenCacheEvent) throws Exception {
         PathChildrenCacheEvent.Type eventType = pathChildrenCacheEvent.getType();
         String nodePath = pathChildrenCacheEvent.getData().getPath();
-        System.out.println(eventType);
+        System.out.println("SourceNode: " + eventType);
         switch (eventType) {
             case CHILD_ADDED:
-                if (sourceNodeWrapperMap.get(nodePath).nodesLength() == 0 ) {
+                SourceNodeWrapper sourceNodeWrapper = sourceNodeWrapperMap.get(nodePath);
+                if (sourceNodeWrapper == null || sourceNodeWrapper.nodesLength() == 0) {
                     addSourceNodeWrapper(nodePath);
+                    System.out.println(this);
                 }
                 break;
             case CHILD_REMOVED:
                 removeSourceNodeWrapper(nodePath);
+                System.out.println(this);
                 break;
             default:
+        }
+    }
+
+    /**
+     * ConsumeNode Watcher
+     */
+    private class ConsumeNodeWatcher implements PathChildrenCacheListener {
+
+        public void childEvent(CuratorFramework curatorFramework, PathChildrenCacheEvent pathChildrenCacheEvent) throws Exception {
+            PathChildrenCacheEvent.Type eventType = pathChildrenCacheEvent.getType();
+            String nodePath = pathChildrenCacheEvent.getData().getPath();
+            System.out.println("ConsumeNode: " + eventType);
+            switch (eventType) {
+                case CHILD_ADDED:
+                    if (stringStrategyVirtualNodeMap.get(nodePath) == null) {
+                        addConusmeNode(nodePath);
+                        System.out.println(ZkMonitor.this);
+                    }
+                    break;
+                case CHILD_REMOVED:
+                    removeConsumeNode(nodePath);
+                    System.out.println(ZkMonitor.this);
+                    break;
+                default:
+            }
+
+        }
+    }
+
+    public void stop() {
+        zkBalancer.close();
+        try {
+            pathChildrenCacheSource.close();
+            pathChildrenCacheConsume.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
