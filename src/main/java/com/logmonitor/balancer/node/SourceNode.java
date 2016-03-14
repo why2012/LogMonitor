@@ -72,6 +72,10 @@ public class SourceNode extends ZkNode{
         return SourceId.prefix + nodeId;
     }
 
+    public String getAllocPath() {
+        return nodePath + "/allocated";
+    }
+
     public String getNodeProperty() {
         return _sourceIp + "," + _sourcePort + "," + _direction + "," + _available + "," + _allocated;
     }

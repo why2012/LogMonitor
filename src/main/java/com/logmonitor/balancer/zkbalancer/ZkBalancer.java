@@ -152,9 +152,34 @@ public class ZkBalancer {
         return consumeNodeList;
     }
 
+    public List<SourceNode> getAllSourceNodes() {
+        List<SourceNode> sourceNodeList = new ArrayList<SourceNode>();
+        try {
+            List<String> pathList = client.getChildren().forPath(zkSourceParentPath);
+            for (String path : pathList) {
+                SourceNode sourceNode = new SourceNode();
+                getByNodeObj(sourceNode,zkSourceParentPath + "/" + path);
+                sourceNode.setNodePath(zkSourceParentPath + "/" + path);
+                sourceNodeList.add(sourceNode);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return sourceNodeList;
+    }
+
     public boolean deleteNode(String path) {
         try {
             client.delete().guaranteed().deletingChildrenIfNeeded().forPath(path);
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean setNodeData(String path, byte[] data) {
+        try {
+            client.setData().forPath(path, data);
         } catch (Exception e) {
             return false;
         }

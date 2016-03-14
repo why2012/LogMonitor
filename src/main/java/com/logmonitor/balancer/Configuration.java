@@ -21,6 +21,7 @@ public class Configuration {
     //Ephemeral node can not have children
     private ZkCreateMode zkSourceNodeMode = ZkCreateMode.PERSISTENT;
     private ZkCreateMode zkConsumeNodeMode = ZkCreateMode.PERSISTENT;
+    private ZkCreateMode zkDefaultNodeMode = ZkCreateMode.PERSISTENT;
 
     public void addZkHost(String host) {
         connectString.add(host);
@@ -99,6 +100,14 @@ public class Configuration {
 
     public ZkCreateMode getZkConsumeNodeMode() {
         return zkConsumeNodeMode;
+    }
+
+    public ZkCreateMode getZkDefaultNodeMode() {
+        return zkDefaultNodeMode;
+    }
+
+    public void setZkDefaultNodeMode(ZkCreateMode zkDefaultNodeMode) {
+        this.zkDefaultNodeMode = zkDefaultNodeMode;
     }
 
     public void setZkConsumeNodeMode(ZkCreateMode zkConsumeNodeMode) {

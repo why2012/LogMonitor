@@ -21,9 +21,9 @@ import java.util.Map;
  * Created by wanghaiyang on 16/3/12.
  */
 public class ZkMonitor implements PathChildrenCacheListener{
-    //sorted by nodes' weight
+    //sorted by nodes' weight, stored consumeNode and its properties
     private List<StrategyVirtualNode> strategyVirtualNodeList = new ArrayList<StrategyVirtualNode>();
-    //path -> SourceNodeWrapper
+    //path -> SourceNodeWrapper, stored SourceNode and its owners
     private Map<String, SourceNodeWrapper> sourceNodeWrapperMap = new HashMap<String, SourceNodeWrapper>();
     //SourceNode cache, if no consume node when SourceNode added, then cache the SourceNode.
     private List<SourceNodeWrapper> sourceNodeWrapperCache = new ArrayList<SourceNodeWrapper>();
@@ -54,11 +54,19 @@ public class ZkMonitor implements PathChildrenCacheListener{
     }
 
     private void scanNodesAndInit() {
+        List<SourceNode> curSourceNodeList = zkBalancer.getAllSourceNodes();
+        for (SourceNode sourceNode : curSourceNodeList) {
+            SourceNodeWrapper sourceNodeWrapper = new SourceNodeWrapper(sourceNode);
+            sourceNodeWrapperMap.put(sourceNode.getNodePath(), sourceNodeWrapper);
+        }
         List<ConsumeNode> consumeNodeList = zkBalancer.getAllConsumeNodes();
         for (ConsumeNode consumeNode : consumeNodeList) {
             StrategyVirtualNode strategyVirtualNode = new StrategyVirtualNode(consumeNode);
             strategyVirtualNode.setSourceNodeNum(sourceNodeWrapperMap.size());
             strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(consumeNode.getSourceNodeMap().size());
+            for (Map.Entry<String, SourceNode> entry : consumeNode.getSourceNodeMap().entrySet()) {
+                sourceNodeWrapperMap.get(entry.getKey()).addNode(strategyVirtualNode);
+            }
             strategyVirtualNodeList.add(strategyVirtualNode);
         }
         for (StrategyVirtualNode strategyVirtualNode : strategyVirtualNodeList) {
@@ -101,6 +109,8 @@ public class ZkMonitor implements PathChildrenCacheListener{
     private void mountSourceNode(SourceNode sourceNode, ConsumeNode consumeNode) {
         String path = consumeNode.getNodePath() + "/" + sourceNode.getNodeName();
         zkBalancer.createNode(path);
+        //set sourceNode allocated flag to true
+        zkBalancer.setNodeData(sourceNode.getAllocPath(), new Boolean(true).toString().getBytes());
     }
 
     private void unmountSourceNode(SourceNode sourceNode, ConsumeNode consumeNode) {
@@ -128,13 +138,16 @@ public class ZkMonitor implements PathChildrenCacheListener{
 
     public void childEvent(CuratorFramework curatorFramework, PathChildrenCacheEvent pathChildrenCacheEvent) throws Exception {
         PathChildrenCacheEvent.Type eventType = pathChildrenCacheEvent.getType();
+        String nodePath = pathChildrenCacheEvent.getData().getPath();
         System.out.println(eventType);
         switch (eventType) {
             case CHILD_ADDED:
-                addSourceNodeWrapper(pathChildrenCacheEvent.getData().getPath());
+                if (sourceNodeWrapperMap.get(nodePath).nodesLength() == 0 ) {
+                    addSourceNodeWrapper(nodePath);
+                }
                 break;
             case CHILD_REMOVED:
-                removeSourceNodeWrapper(pathChildrenCacheEvent.getData().getPath());
+                removeSourceNodeWrapper(nodePath);
                 break;
             default:
         }
@@ -142,8 +155,9 @@ public class ZkMonitor implements PathChildrenCacheListener{
 
     public String toString() {
         String result = "[ZkMonitor]\n";
-        result += "(" + strategyVirtualNodeList + ")\n";
-        result += "(" + sourceNodeWrapperMap + ")\n";
+        result += "strategyVirtualNodeList: (" + strategyVirtualNodeList + ")\n";
+        result += "sourceNodeWrapperMap: (" + sourceNodeWrapperMap + ")\n";
+        result += "sourceNodeWrapperCache: (" + sourceNodeWrapperCache + ")\n";
         return result;
     }
 }

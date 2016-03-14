@@ -65,7 +65,7 @@ public class ZkBalancerFactory {
                             configuration.getConnectionTimeoutMs(),
                             retryPolicy);
                     zkBalancer.setParentPath(parentPath);
-                    zkBalancer.setNodeMode(Configuration.ZkCreateMode.EPHEMERAL);
+                    zkBalancer.setNodeMode(configuration.getZkDefaultNodeMode());
             }
             zkBalancer.setZkSourceParentPath(configuration.getZkSourceParentPath());
             zkBalancer.setZkConsumeParentPath(configuration.getZkConsumeParentPath());
