@@ -3,6 +3,7 @@ package com.logmonitor.balancer.zkbalancer;
 import com.logmonitor.balancer.Configuration;
 import com.logmonitor.balancer.node.ConsumeNode;
 import com.logmonitor.balancer.node.SourceNode;
+import com.logmonitor.balancer.strategy.Strategy;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -86,7 +87,7 @@ public class ZkBalancer {
         try {
             client.create().creatingParentsIfNeeded().withMode(nodeMode)
                     .forPath(path);
-        } catch (Exception e) {e.printStackTrace();
+        } catch (Exception e) {
             throw new RuntimeException("Failed to create node: " + path, e);
         }
     }
@@ -173,6 +174,16 @@ public class ZkBalancer {
             throw new RuntimeException(e);
         }
         return sourceNodeList;
+    }
+
+    public List<String> gethChildren(String path) {
+        List<String> children = null;
+        try {
+            children = client.getChildren().forPath(path);
+        } catch (Exception e) {
+            return null;
+        }
+        return children;
     }
 
     public boolean deleteNode(String path) {

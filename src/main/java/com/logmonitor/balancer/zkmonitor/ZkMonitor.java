@@ -13,10 +13,7 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by wanghaiyang on 16/3/12.
@@ -277,16 +274,18 @@ public class ZkMonitor implements PathChildrenCacheListener{
                     strategyVirtualNodeMin = strategyVirtualNode;
                 }
             }
-            int avg = totalSourceNodePossessedNum / strategyVirtualNodeList.size();
+            int avg = totalSourceNodePossessedNum / (strategyVirtualNodeList.size() - 1);
             avgSourceNodePossessedNum = avg == 0 ? 1 : avg;
             if (strategyVirtualNodeMax != strategyVirtualNodeMin && maxSourceNodePossessedNum > 0) {
                 int nodeNumGap = maxSourceNodePossessedNum - avgSourceNodePossessedNum;
-                SourceNode sourceNode = strategyVirtualNodeMax.getConsumeNode().getEntrySet().iterator().next().getValue();
-                if (nodeNumGap != 0 && strategyVirtualNodeMin.getCurConsumeNodeOwnedSourceNum() < avgSourceNodePossessedNum) {
-                    unmountSourceNodeFromConsumeNode(sourceNode, strategyVirtualNodeMax);
-                }
-                if (strategyVirtualNodeMin.getCurConsumeNodeOwnedSourceNum() < avgSourceNodePossessedNum) {
+                Iterator<Map.Entry<String, SourceNode>> iterator = strategyVirtualNodeMax.getConsumeNode().getEntrySet().iterator();
+                while (nodeNumGap >= 0 && strategyVirtualNodeMin.getCurConsumeNodeOwnedSourceNum() < avgSourceNodePossessedNum) {
+                    SourceNode sourceNode = iterator.next().getValue();
+                    if (nodeNumGap > 0) {
+                        unmountSourceNodeFromConsumeNode(sourceNode, strategyVirtualNodeMax);
+                    }
                     mountSourceNodeOnConsumeNode(sourceNode, strategyVirtualNodeMin);
+                    nodeNumGap--;
                 }
             }
         }

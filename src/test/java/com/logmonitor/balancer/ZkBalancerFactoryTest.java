@@ -2,6 +2,7 @@ package com.logmonitor.balancer;
 
 import com.logmonitor.balancer.node.ConsumeNode;
 import com.logmonitor.balancer.node.SourceNode;
+import com.logmonitor.balancer.strategy.Strategy;
 import com.logmonitor.balancer.zkbalancer.ZkBalancer;
 import com.logmonitor.balancer.zkbalancer.ZkBalancerForConsume;
 import com.logmonitor.balancer.zkbalancer.ZkBalancerForSource;
@@ -24,7 +25,8 @@ public class ZkBalancerFactoryTest {
         DELETE_SOURCE,
         DELETE_CONSUME,
         LS_SOURCE,
-        LS_CONSUME
+        LS_CONSUME,
+        LS_CHILD
     };
 
     public static void main(String[] _args) throws Exception {
@@ -39,6 +41,7 @@ public class ZkBalancerFactoryTest {
         commandMap.put("delete-consume", COMMAND.DELETE_CONSUME);
         commandMap.put("ls-source", COMMAND.LS_SOURCE);
         commandMap.put("ls-consume", COMMAND.LS_CONSUME);
+        commandMap.put("ls-child", COMMAND.LS_CHILD);
         Scanner scanner = new Scanner(System.in);
         while(true) {
             commandLine = scanner.nextLine();
@@ -90,6 +93,16 @@ public class ZkBalancerFactoryTest {
                     List<ConsumeNode> consumeNodeList = zkBalancerForConsume.getAllConsumeNodes();
                     for (ConsumeNode consumeNode1 : consumeNodeList) {
                         System.out.println(consumeNode1.getNodePath());
+                    }
+                    break;
+                case LS_CHILD:
+                    List<String> pathList = zkBalancerForConsume.gethChildren(args);
+                    if (pathList == null || pathList.size() == 0) {
+                        System.out.println("Zero child");
+                    } else {
+                        for (String path : pathList) {
+                            System.out.println(path);
+                        }
                     }
                     break;
                 default:

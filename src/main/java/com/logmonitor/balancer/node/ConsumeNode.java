@@ -5,12 +5,13 @@ import com.logmonitor.balancer.ids.SourceId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wanghaiyang on 16/3/12.
  */
 public class ConsumeNode extends ZkNode {
-    private Map<String, SourceNode> sourceNodeMap = new HashMap<String, SourceNode>();
+    private Map<String, SourceNode> sourceNodeMap = new ConcurrentHashMap<String, SourceNode>();
 
     public void addSourceNode(String path, SourceNode sourceNode) {
         sourceNodeMap.put(path, sourceNode);
