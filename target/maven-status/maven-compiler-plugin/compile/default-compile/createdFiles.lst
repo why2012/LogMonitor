@@ -1,9 +1,11 @@
 com/logmonitor/filemonitor/handlers/HandlerGroup.class
 com/logmonitor/filemonitor/scanner/TimeFlusher.class
 com/logmonitor/filemonitor/scanner/FileScanner.class
+com/logmonitor/processor/adapter/Adapter.class
 com/logmonitor/filemonitor/handlers/NetHandler$1.class
 com/logmonitor/filemonitor/buffer/BufferEvent.class
 com/logmonitor/filemonitor/config/Conf$ConfItem.class
+com/logmonitor/LogMonitorBootstrap.class
 com/logmonitor/filemonitor/buffer/BufferEventHandler.class
 com/logmonitor/filemonitor/handlers/MsgModifier.class
 com/logmonitor/filemonitor/handlers/NetHandler.class
@@ -15,6 +17,7 @@ com/logmonitor/filemonitor/config/Conf.class
 com/logmonitor/filemonitor/handlers/StdoutHandler.class
 com/logmonitor/filemonitor/FileMonitor.class
 com/logmonitor/filemonitor/ShutdownHook.class
+com/logmonitor/processor/adapter/RedisAdapter.class
 com/logmonitor/filemonitor/scanner/FileListener.class
 com/logmonitor/filemonitor/buffer/Buffer.class
 com/logmonitor/filemonitor/handlers/Handler.class

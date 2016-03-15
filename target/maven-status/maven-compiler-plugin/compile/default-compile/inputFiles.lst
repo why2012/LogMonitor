@@ -2,10 +2,12 @@
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/balancer/node/ConsumeNode.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/handlers/HandlerGroup.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/handlers/NetHandler.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/processor/adapter/Adapter.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/buffer/ThreadSafeBuffer.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/FileMonitor.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/balancer/strategy/Strategy.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/buffer/BufferEvent.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/LogMonitorBootstrap.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/balancer/node/SourceNode.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/scanner/FileScanner.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/balancer/strategy/CompareStrategy.java
@@ -28,6 +30,7 @@
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/scanner/FileNode.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/filemonitor/handlers/MsgModifier.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/balancer/Configuration.java
+/Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/processor/adapter/RedisAdapter.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/authentication/Authentication.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/balancer/zkbalancer/ZkBalancerForConsume.java
 /Users/wanghaiyang/Documents/workspace/logmonitor/src/main/java/com/logmonitor/balancer/ids/SourceId.java
