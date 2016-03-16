@@ -1,5 +1,6 @@
 package com.logmonitor.balancer.node;
 
+import com.logmonitor.balancer.ids.ConsumeId;
 import com.logmonitor.balancer.ids.SourceId;
 
 import java.util.HashMap;
@@ -35,6 +36,6 @@ public class ConsumeNode extends ZkNode {
 
     @Override
     public String getNodeName() {
-        return SourceId.prefix + nodeId;
+        return ConsumeId.prefix + nodeId;
     }
 }

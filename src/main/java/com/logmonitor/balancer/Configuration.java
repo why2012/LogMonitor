@@ -27,6 +27,12 @@ public class Configuration {
         connectString.add(host);
     }
 
+    public void addZkHost(String[] hosts) {
+        for (String host : hosts) {
+            connectString.add(host);
+        }
+    }
+
     public void removeHost(String host) {
         connectString.remove(host);
     }

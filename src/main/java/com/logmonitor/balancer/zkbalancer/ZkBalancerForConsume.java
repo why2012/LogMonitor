@@ -16,13 +16,13 @@ public class ZkBalancerForConsume extends ZkBalancer {
         super(connectString, sessionTimeoutMs, connectTimeoutMs, retryPolicy);
     }
 
-    public ConsumeId registerConsume(ConsumeNode consumeNode) {
+    public boolean registerConsume(ConsumeNode consumeNode) {
         ConsumeId consumeId = new ConsumeId();
-        String path = parentPath + "/" + consumeId.getUniqueId();
-        createNode(path);
+        String path = parentPath + "/" + consumeId.prefix + consumeId.getUniqueId();
+        boolean result = createNode(path);
         consumeNode.setNodePath(path);
         consumeNode.setNodeId(consumeId.getUniqueId());
-        return consumeId;
+        return result;
     }
 
     public boolean removeConsume(ConsumeNode consumeNode) {

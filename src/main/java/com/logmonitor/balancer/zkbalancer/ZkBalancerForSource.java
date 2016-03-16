@@ -13,13 +13,13 @@ public class ZkBalancerForSource extends ZkBalancer {
         super(connectString, sessionTimeoutMs, connectTimeoutMs, retryPolicy);
     }
 
-    public SourceId registerSource(SourceNode sourceNode) {
+    public boolean registerSource(SourceNode sourceNode) {
         SourceId sourceId = new SourceId();
-        String path = parentPath + "/" + sourceId.getUniqueId();
-        createByNodeObj(sourceNode, path);
+        String path = parentPath + "/" + sourceId.prefix + sourceId.getUniqueId();
+        boolean result = createByNodeObj(sourceNode, path);
         sourceNode.setNodePath(path);
         sourceNode.setNodeId(sourceId.getUniqueId());
-        return sourceId;
+        return result;
     }
 
     public boolean removeSource(SourceNode sourceNode) {

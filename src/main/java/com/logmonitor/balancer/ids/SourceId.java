@@ -7,6 +7,6 @@ public class SourceId extends Id {
     public static final String prefix = "PRODUCER|";
 
     public SourceId() {
-        uniqueId = prefix + getUUID();
+        uniqueId = getUUID();
     }
 }

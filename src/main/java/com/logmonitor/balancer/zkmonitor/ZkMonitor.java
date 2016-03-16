@@ -61,6 +61,20 @@ public class ZkMonitor implements PathChildrenCacheListener{
         System.out.println(this);
     }
 
+    public String[] getAllPath() {
+        List<String> pathList = new ArrayList<String>();
+        for (StrategyVirtualNode strategyVirtualNode : strategyVirtualNodeList) {
+            pathList.add(strategyVirtualNode.getConsumeNode().getNodeName());
+        }
+
+        for (SourceNodeWrapper sourceNodeWrapper : sourceNodeWrapperMap.values()) {
+            pathList.add(sourceNodeWrapper.getSourceNode().getNodeName());
+        }
+        String[] pathArr = new String[pathList.size()];
+        pathList.toArray(pathArr);
+        return pathArr;
+    }
+
     private void scanNodesAndInit() {
         List<SourceNode> curSourceNodeList = zkBalancer.getAllSourceNodes();
         for (SourceNode sourceNode : curSourceNodeList) {
@@ -140,6 +154,7 @@ public class ZkMonitor implements PathChildrenCacheListener{
             if (sourceNodeWrapper == null) {
                 return;
             }
+            sourceNodeWrapperCache.remove(sourceNodeWrapper);
             sourceNodeWrapperMap.remove(sourceNodePath);
             for (StrategyVirtualNode strategyVirtualNode : sourceNodeWrapper.getStrategyVirtualNodeList()) {
                 strategyVirtualNode.setCurConsumeNodeOwnedSourceNum(strategyVirtualNode.getCurConsumeNodeOwnedSourceNum() - 1);

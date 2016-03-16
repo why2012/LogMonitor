@@ -3,7 +3,6 @@ package com.logmonitor.balancer.zkbalancer;
 import com.logmonitor.balancer.Configuration;
 import com.logmonitor.balancer.node.ConsumeNode;
 import com.logmonitor.balancer.node.SourceNode;
-import com.logmonitor.balancer.strategy.Strategy;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -41,6 +40,14 @@ public class ZkBalancer {
         this.zkConsumeParentPath = zkConsumeParentPath;
     }
 
+    public String getZkSourceParentPath() {
+        return this.zkSourceParentPath;
+    }
+
+    public String getZkConsumeParentPath() {
+        return this.zkConsumeParentPath;
+    }
+
     public PathChildrenCache getPathChildrenCache(String path, boolean dataIsCompressed) {
         PathChildrenCache pathChildrenCache = new PathChildrenCache(client, path, dataIsCompressed);
         return pathChildrenCache;
@@ -74,25 +81,27 @@ public class ZkBalancer {
         }
     }
 
-    public void createNode(String path, byte[] data) {
+    public boolean createNode(String path, byte[] data) {
         try {
             client.create().creatingParentsIfNeeded().withMode(nodeMode)
                     .forPath(path,data);
+            return true;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create node: " + path, e);
+            return false;
         }
     }
 
-    public void createNode(String path) {
+    public boolean createNode(String path) {
         try {
             client.create().creatingParentsIfNeeded().withMode(nodeMode)
                     .forPath(path);
+            return true;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create node: " + path, e);
+            return false;
         }
     }
 
-    public void createByNodeObj(Object node, String path) {
+    public boolean createByNodeObj(Object node, String path) {
         Field[] fields = node.getClass().getDeclaredFields();
         for (Field field : fields) {
             if (field.getName().startsWith("_")) {
@@ -100,10 +109,11 @@ public class ZkBalancer {
                     field.setAccessible(true);
                     createNode(path + "/" + field.getName().substring(1), field.get(node).toString().getBytes());
                 } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
+                    return false;
                 }
             }
         }
+        return true;
     }
 
     public void getByNodeObj(Object node, String path) {
@@ -131,7 +141,8 @@ public class ZkBalancer {
                         field.set(node, data);
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    //throw new RuntimeException(e);
+                    //ignore
                 }
             }
         }
@@ -214,9 +225,11 @@ public class ZkBalancer {
             for (String sourcePath : children) {
                 sourcePath = zkSourceParentPath + "/" + sourcePath;
                 SourceNode sourceNode = new SourceNode();
-                getByNodeObj(sourceNode, sourcePath);
-                sourceNode.setNodePath(sourcePath);
-                consumeNode.addSourceNode(sourcePath, sourceNode);
+                if (client.checkExists().forPath(sourcePath) != null) {
+                    getByNodeObj(sourceNode, sourcePath);
+                    sourceNode.setNodePath(sourcePath);
+                    consumeNode.addSourceNode(sourcePath, sourceNode);
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -21,7 +21,9 @@ public class ZkBalancerFactoryTest {
         DELETE_CONSUME,
         LS_SOURCE,
         LS_CONSUME,
-        LS_CHILD
+        LS_CHILD,
+        CLEAR_SOURCE,
+        CLEAR_CONSUME
     };
 
     public static void main(String[] _args) throws Exception {
@@ -37,6 +39,8 @@ public class ZkBalancerFactoryTest {
         commandMap.put("ls-source", COMMAND.LS_SOURCE);
         commandMap.put("ls-consume", COMMAND.LS_CONSUME);
         commandMap.put("ls-child", COMMAND.LS_CHILD);
+        commandMap.put("clear-source", COMMAND.CLEAR_SOURCE);
+        commandMap.put("clear-consume", COMMAND.CLEAR_CONSUME);
         Scanner scanner = new Scanner(System.in);
         while(true) {
             commandLine = scanner.nextLine();
@@ -98,6 +102,18 @@ public class ZkBalancerFactoryTest {
                         for (String path : pathList) {
                             System.out.println(path);
                         }
+                    }
+                    break;
+                case CLEAR_SOURCE:
+                    List<SourceNode> _sourceNodeList = zkBalancerForSource.getAllSourceNodes();
+                    for (SourceNode sourceNode1 : _sourceNodeList) {
+                        System.out.println(sourceNode1.getNodePath() + ": " + zkBalancerForSource.removeSource(sourceNode1));
+                    }
+                    break;
+                case CLEAR_CONSUME:
+                    List<ConsumeNode> _consumeNodeList = zkBalancerForConsume.getAllConsumeNodes();
+                    for (ConsumeNode consumeNode1 : _consumeNodeList) {
+                        System.out.println(consumeNode1.getNodePath() + ": " + zkBalancerForConsume.removeConsume(consumeNode1));
                     }
                     break;
                 default:

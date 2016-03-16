@@ -7,6 +7,6 @@ public class ConsumeId extends Id {
     public static final String prefix = "CONSUMER|";
 
     public ConsumeId() {
-        uniqueId = prefix + getUUID();
+        uniqueId = getUUID();
     }
 }
