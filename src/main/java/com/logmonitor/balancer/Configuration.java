@@ -33,6 +33,10 @@ public class Configuration {
         }
     }
 
+    public void clearZkHost() {
+        connectString.clear();
+    }
+
     public void removeHost(String host) {
         connectString.remove(host);
     }

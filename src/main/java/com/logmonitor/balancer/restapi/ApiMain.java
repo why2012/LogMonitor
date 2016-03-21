@@ -20,6 +20,9 @@ public class ApiMain {
     private ZkBalancerForSource zkBalancerForSource = null;
     private ZkBalancerForConsume zkBalancerForConsume = null;
     private HeartBearScanner heartBearScanner = null;
+    public static final String CONSUME_ONLINE = "/zk/consume-online";
+    public static final String CONSUME_OFFLINE = "/zk/consume-offline";
+    public static final String HEART_BEAT = "/zk/heart-beat";
 
     public ApiMain(ZkBalancerForSource zkBalancerForSource, ZkBalancerForConsume zkBalancerForConsume, String[] zookeeperHosts, HeartBearScanner heartBearScanner) {
         this.zkBalancerForSource = zkBalancerForSource;
@@ -73,7 +76,7 @@ public class ApiMain {
     }
 
     /**
-     * @return Status:msg -> consumeNode path|zookeeper host
+     * @return Status:msg -> consumeNode path;zookeeper host
      */
     @Path("/consume-online")
     @GET
@@ -83,7 +86,7 @@ public class ApiMain {
         ConsumeNode consumeNode = new ConsumeNode();
         boolean result = zkBalancerForConsume.registerConsume(consumeNode);
         if (result) {
-            status.setMsg(consumeNode.getNodeName() + "|" + zookeeperHosts[(int)Math.random() * zookeeperHosts.length]);
+            status.setMsg(consumeNode.getNodeName() + ";" + zookeeperHosts[(int)Math.random() * zookeeperHosts.length]);
             heartBearScanner.add(consumeNode.getNodeName());
         } else {
             status.setStatus(Status.RESULT.FAILED);

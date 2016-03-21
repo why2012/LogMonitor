@@ -10,6 +10,10 @@ public class Status {
     private RESULT status = RESULT.OK;
     private String msg = "";
 
+    public Status() {
+
+    }
+
     public Status(RESULT status) {
         this.status = status;
     }

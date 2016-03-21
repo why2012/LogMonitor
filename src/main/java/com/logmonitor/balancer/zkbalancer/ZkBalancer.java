@@ -141,7 +141,6 @@ public class ZkBalancer {
                         field.set(node, data);
                     }
                 } catch (Exception e) {
-                    //throw new RuntimeException(e);
                     //ignore
                 }
             }

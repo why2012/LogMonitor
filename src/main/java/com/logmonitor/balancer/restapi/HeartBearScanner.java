@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit;
 public class HeartBearScanner implements Runnable {
     private ZkBalancer zkBalancer = null;
     private Map<String, Long> pathAndTime = new ConcurrentHashMap<String, Long>();
-    private int heartBeatScanInterval = 100;//milli seconds
-    private int heartExpiredInterval = 1000;//milli seconds
+    private int heartBeatScanInterval = 1000;//milli seconds
+    private int heartExpiredInterval = 5000;//milli seconds
     private boolean running = false;
     private Thread thread;
 
